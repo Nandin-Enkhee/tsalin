@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Адууны Цалингийн Систем - Шинэчлэл</title>
+  <title>Адууны Цалингийн Систем</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -163,7 +163,7 @@
         <i class="fas fa-sign-in-alt mr-2"></i>Нэвтрэх
       </button>
       <div class="text-center mt-4 text-sm text-gray-500">
-        Анхны нууц үг: <span class="font-mono">0247</span>
+        Анхны нууц үг: <span class="font-mono">1234</span>
       </div>
     </section>
 
@@ -628,7 +628,7 @@
   // Login
   function login() {
     const pw = document.getElementById('passwordInput').value;
-    if (pw === '0247') {
+    if (pw === '1515') {
       loginSection.classList.add('hidden');
       appSection.classList.remove('hidden');
       showSection('salarySection');
@@ -1376,7 +1376,7 @@
   // Delete salary day
   function deleteSalaryDay(date) {
     const password = prompt("Устгах нууц үгээ оруулна уу:");
-    if (password === '1234') {
+    if (password === '8008') {
       salaryHistory = salaryHistory.filter(item => item.date !== date);
       saveSalaryHistory();
       renderSalaryHistory();
@@ -1525,3 +1525,4 @@
 
 </body>
 </html>
+
