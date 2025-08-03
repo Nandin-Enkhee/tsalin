@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Адууны Цалингийн Систем</title>
+  <title>Адууны Цалингийн Систем - Шинэчлэл</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -127,6 +127,15 @@
     .summary-card {
       @apply bg-gradient-to-r from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30 p-4 rounded-xl shadow-md;
     }
+    .split-container {
+      @apply bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-700 mb-4;
+    }
+    .split-inputs {
+      @apply grid grid-cols-1 md:grid-cols-3 gap-3 mb-3;
+    }
+    .split-result {
+      @apply bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-700 mt-2;
+    }
   </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200 min-h-screen flex flex-col">
@@ -137,7 +146,7 @@
       <i class="fas fa-horse mr-3"></i>
       Адууны Цалингийн Систем - Шинэчлэл
     </div>
-    <div class="text-sm mt-1 opacity-80">Цалингийн бүртгэлийн хялбарчилсан хувилбар</div>
+    <div class="text-sm mt-1 opacity-80">Хэсэгчилсэн ажил, урьдчилгаа төлбөртэй хувилбар</div>
   </header>
 
   <main class="flex-grow container mx-auto px-4 py-6 max-w-6xl">
@@ -192,7 +201,7 @@
         </button>
       </nav>
 
-      <!-- Dashboard Summary - ШИНЭЧЛЭГДСЭН (Зөвхөн өнөөдрийн ажилчдын тоо) -->
+      <!-- Dashboard Summary -->
       <div class="grid grid-cols-1 gap-4 mb-6">
         <div class="worker-card">
           <div class="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -241,6 +250,40 @@
               </label>
             </div>
             
+            <!-- Шинэ: Хэсэгчилсэн ажлын тооцоо -->
+            <div class="split-container">
+              <h3 class="font-bold mb-3 flex items-center">
+                <i class="fas fa-users-slash mr-2 text-yellow-600"></i>2 ээлжээр ажилласан тохиолдол
+              </h3>
+              <div class="split-inputs">
+                <div>
+                  <label>
+                    <span class="block mb-1 font-medium">Эхний хэсгийн адууны тоо:</span>
+                    <input id="firstPartHorses" type="number" min="0" class="input-field" placeholder="Адууны тоо" />
+                  </label>
+                </div>
+                <div>
+                  <label>
+                    <span class="block mb-1 font-medium">Эхний ажилчид:</span>
+                    <input id="initialWorkers" type="number" min="1" class="input-field" placeholder="Ажилчдын тоо" />
+                  </label>
+                </div>
+                <div>
+                  <label>
+                    <span class="block mb-1 font-medium">Дараагийн хэсгийн ажилчид:</span>
+                    <input id="leftWorkers" type="number" min="0" class="input-field" placeholder="Гарсан тоо" />
+                  </label>
+                </div>
+              </div>
+              <button onclick="calculateSplit()" class="btn-clean w-full">
+                <i class="fas fa-calculator mr-2"></i>Тооцоолох
+              </button>
+              <div id="splitResult" class="split-result hidden">
+                <div class="font-bold">Тооцоолсон цалин:</div>
+                <div id="splitCalculation"></div>
+              </div>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
               <button onclick="calculateSalary()" class="btn-clean flex items-center justify-center">
                 <i class="fas fa-calculator mr-2 text-lg"></i>Цалин бодох
@@ -269,7 +312,6 @@
                 <option>Бүртгэл</option>
                 <option>Нэмэлт</option>
                 <option>Толгой</option>
-                <option>Зээл</option>
               </select>
               <input id="manualDesc" type="text" class="input-field" placeholder="Тайлбар" />
               <input id="manualSalary" type="number" min="0" class="input-field" placeholder="Цалин" />
@@ -590,6 +632,9 @@
         </table>
       </div>
       
+      <!-- Шинэ: Урьдчилгаа, хувцасны хэсэг -->
+      <div id="advanceClothesSection" class="mt-8"></div>
+      
       <div class="print-signature">
         Гарын үсэг _______________________
       </div>
@@ -618,6 +663,7 @@
   let manualWorkers = [];
   let latestSalaryCalc = [];
   let salaryChanges = {}; // Цалингийн өөрчлөлтүүдийг хадгалах
+  let splitConfig = null; // Хэсэгчилсэн ажлын тохиргоо
 
   // Position change event
   document.getElementById('workerPosition').addEventListener('change', function() {
@@ -628,9 +674,9 @@
   // Login
   function login() {
     const pw = document.getElementById('passwordInput').value;
-    if (pw === '1515') {
-      loginSection.classList.add('hidden');
-      appSection.classList.remove('hidden');
+    if (pw === '1234') {
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('appSection').classList.remove('hidden');
       showSection('salarySection');
       refreshAll();
       updateDashboard();
@@ -662,7 +708,7 @@
     });
   }
 
-  // Update dashboard stats - ШИНЭЧЛЭГДСЭН (Зөвхөн өнөөдрийн ажилчдын тоо)
+  // Update dashboard stats
   function updateDashboard() {
     const today = new Date().toISOString().slice(0,10);
     const todayCount = todayWorkers[today] ? todayWorkers[today].length : 0;
@@ -859,6 +905,55 @@
     renderSalaryTable();
   }
 
+  // Calculate split work
+  function calculateSplit() {
+    const firstPartHorses = parseInt(document.getElementById('firstPartHorses').value) || 0;
+    const initialWorkers = parseInt(document.getElementById('initialWorkers').value) || 0;
+    const leftWorkers = parseInt(document.getElementById('leftWorkers').value) || 0;
+    
+    if (firstPartHorses <= 0 || initialWorkers <= 0) {
+      alert('Эхний адуу болон ажилчдын тоог зөв оруулна уу');
+      return;
+    }
+    
+    const remainingWorkers = initialWorkers - leftWorkers;
+    if (remainingWorkers <= 0) {
+      alert('Үлдсэн ажилчдын тоо 0-ээс их байх ёстой');
+      return;
+    }
+    
+    const totalHorses = parseInt(document.getElementById('totalAduuInput').value) || 0;
+    if (totalHorses < firstPartHorses) {
+      alert('Нийт адуу эхний хэсгээс бага байж болохгүй');
+      return;
+    }
+    
+    splitConfig = {
+      firstPartHorses,
+      initialWorkers,
+      leftWorkers,
+      remainingWorkers
+    };
+    
+    // Show result
+    const secondPartHorses = totalHorses - firstPartHorses;
+    const firstPartSalary = Math.floor((firstPartHorses * 18000) / initialWorkers);
+    const secondPartSalary = Math.floor((secondPartHorses * 18000) / remainingWorkers);
+    
+    const resultDiv = document.getElementById('splitResult');
+    const calcDiv = document.getElementById('splitCalculation');
+    
+    calcDiv.innerHTML = `
+      Эхний ${firstPartHorses} адууны цалин: (${firstPartHorses} × 18,000) / ${initialWorkers} = ${firstPartSalary.toLocaleString()}₮<br>
+      Дараагийн ${secondPartHorses} адууны цалин: (${secondPartHorses} × 18,000) / ${remainingWorkers} = ${secondPartSalary.toLocaleString()}₮<br><br>
+      <strong>Үр дүн:</strong><br>
+      ${remainingWorkers} ажилчид: ${(firstPartSalary + secondPartSalary).toLocaleString()}₮<br>
+      ${leftWorkers} гарсан ажилчид: ${firstPartSalary.toLocaleString()}₮
+    `;
+    
+    resultDiv.classList.remove('hidden');
+  }
+
   // Цалин бодох
   function calculateSalary() {
     const totalAduu = Number(document.getElementById('totalAduuInput').value);
@@ -897,8 +992,20 @@
       } else if (worker.position === 'Үйлчлэгч') {
         salary = 80000;
       } else if (worker.position === 'Бой') {
-        const cnt = countByPosition['Бой'] || 1;
-        salary = Math.floor((totalAduu * 18000) / cnt);
+        // Check if split configuration is available
+        if (splitConfig) {
+          // Apply split calculation for boys
+          const firstPartSalary = Math.floor((splitConfig.firstPartHorses * 18000) / splitConfig.initialWorkers);
+          const secondPartHorses = totalAduu - splitConfig.firstPartHorses;
+          const secondPartSalary = Math.floor((secondPartHorses * 18000) / splitConfig.remainingWorkers);
+          
+          // We don't know which workers left, so we'll just apply the same for all
+          // In a real system, we'd need to know who left
+          salary = firstPartSalary + secondPartSalary;
+        } else {
+          const cnt = countByPosition['Бой'] || 1;
+          salary = Math.floor((totalAduu * 18000) / cnt);
+        }
       } else if (worker.position === 'Гэдэс') {
         const cnt = countByPosition['Гэдэс'] || 1;
         salary = Math.floor((totalAduu * 4000) / cnt);
@@ -1134,6 +1241,38 @@
     });
 
     document.getElementById('printTotal').textContent = totalSalary.toLocaleString();
+    
+    // Add advance and clothes section
+    const advanceClothes = latestSalaryCalc.filter(item => 
+        item.position === 'Урьдчилгаа' || item.position === 'Хувцас'
+    );
+    
+    const advanceSection = document.getElementById('advanceClothesSection');
+    advanceSection.innerHTML = '';
+    
+    if (advanceClothes.length > 0) {
+        advanceSection.innerHTML = `
+            <h3 class="font-bold mb-2 border-b pb-1">Урьдчилгаа/Хувцасны мэдээлэл</h3>
+            <table class="w-full text-sm border-collapse border border-gray-300 mt-2">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="px-3 py-2 text-left">Нэр</th>
+                        <th class="px-3 py-2 text-left">Төрөл</th>
+                        <th class="px-3 py-2 text-right">Дүн</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${advanceClothes.map(item => `
+                        <tr>
+                            <td class="px-3 py-2 border">${item.name}</td>
+                            <td class="px-3 py-2 border">${item.position}</td>
+                            <td class="px-3 py-2 border text-right">${item.salary.toLocaleString()}₮</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
     
     printArea.style.display = 'block';
     window.print();
@@ -1376,12 +1515,12 @@
   // Delete salary day
   function deleteSalaryDay(date) {
     const password = prompt("Устгах нууц үгээ оруулна уу:");
-    if (password === '8008') {
+    if (password === '1234') {
       salaryHistory = salaryHistory.filter(item => item.date !== date);
       saveSalaryHistory();
       renderSalaryHistory();
       alert('Амжилттай устгагдлаа');
-    } else {
+    } else if (password !== null) {
       alert('Нууц үг буруу байна');
     }
   }
@@ -1525,4 +1664,3 @@
 
 </body>
 </html>
-
