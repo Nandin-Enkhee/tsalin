@@ -59,8 +59,13 @@
     }
     @media print {
       @page {
-        size: landscape;
+        size: A4 portrait;
+        margin: 0.5cm;
       }
+      #printTotal {
+        display: none !important;
+      }
+      
       body * {
         visibility: hidden;
       }
@@ -82,6 +87,35 @@
         display: none !important;
       }
     }
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  
+    #printArea {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  
+    /* Хүснэгтийн мөр, баганын зай багасгах */
+    #printArea table th,
+    #printArea table td {
+      padding: 2px 4px !important; /* py-2 px-3-г багасгав */
+      font-size: 12px !important;
+    }
+  
+    /* Хүснэгт баганы өргөн барих */
+    #printArea table {
+      table-layout: fixed;
+      width: 100%;
+    }
+  
+    /* Илүү зай арилгах */
+    html, body {
+      height: auto !important;
+      overflow: visible !important;
+    }
+  
     .btn-clean {
       @apply border-2 border-indigo-500 text-indigo-600 dark:text-indigo-300 bg-transparent hover:bg-indigo-100 dark:hover:bg-indigo-900/20 py-3 px-5 rounded-lg font-semibold transition-all shadow-sm;
     }
@@ -629,7 +663,7 @@
 
     <!-- Print Area -->
     <section id="printArea" class="hidden p-6 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
-      <div class="text-center mb-6">
+      <div class="text-center mb-3">
         <h2 class="text-2xl font-bold">Цалингийн тайлан</h2>
         <div class="flex justify-center mt-2">
           <div class="bg-gray-200 px-4 py-1 rounded-full text-sm">
@@ -646,14 +680,12 @@
               <th class="border border-gray-300 px-3 py-2">Нэр</th>
               <th class="border border-gray-300 px-3 py-2">Албан тушаал</th>
               <th class="border border-gray-300 px-3 py-2">Тайлбар</th>
-              <th class="border border-gray-300 px-3 py-2 text-right">Цалин (₮)</th>
               <th class="border border-gray-300 px-3 py-2">Гарын үсэг</th>
             </tr>
           </thead>
           <tbody id="printTableBody"></tbody>
           <tfoot>
             <tr>
-              <td colspan="4" class="border border-gray-300 px-3 py-2 text-right font-bold">Нийт дүн:</td>
               <td class="border border-gray-300 px-3 py-2 text-right font-bold" id="printTotal"></td>
               <td class="border border-gray-300"></td>
             </tr>
@@ -1367,7 +1399,6 @@
         <td class="px-3 py-2">${item.name}</td>
         <td class="px-3 py-2">${item.position}</td>
         <td class="px-3 py-2">${item.desc || ''}</td>
-        <td class="px-3 py-2 text-right ${item.salary < 0 ? 'text-red-600' : ''}">${item.salary.toLocaleString()}</td>
         <td class="px-3 py-2"></td>
       `;
       tbody.appendChild(row);
@@ -1414,32 +1445,41 @@
   }
 
   // Render today workers selection
-  function renderTodayWorkersSelect() {
-    const container = document.getElementById('todayWorkersCheckboxes');
-    container.innerHTML = '';
-    
-    if (workers.length === 0) {
-      container.innerHTML = '<div class="text-center py-4 text-gray-500">Ажилтан бүртгэгдээгүй байна</div>';
-      return;
-    }
-    
-    const date = document.getElementById('todayDateInput').value;
-    const workedToday = todayWorkers[date] || [];
-    
-    workers.forEach(worker => {
-      const div = document.createElement('div');
-      div.className = 'checkbox-container';
-      div.innerHTML = `
-        <input 
-          type="checkbox" 
-          id="worker_${worker.name}" 
-          ${workedToday.includes(worker.name) ? 'checked' : ''}
-        >
-        <label for="worker_${worker.name}">${worker.name} (${worker.position})</label>
-      `;
-      container.appendChild(div);
-    });
+function renderTodayWorkersSelect() {
+  const container = document.getElementById('todayWorkersCheckboxes');
+  container.innerHTML = '';
+  
+  if (workers.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-gray-500">Ажилтан бүртгэгдээгүй байна</div>';
+    return;
   }
+  
+  const date = document.getElementById('todayDateInput').value;
+  let workedToday = todayWorkers[date] || [];
+
+  // Хэрэв өнөөдөр ажилчид сонгогдоогүй бол өмнөх өдрийнхийг автоматаар авах
+  if (workedToday.length === 0) {
+    const allDates = Object.keys(todayWorkers).sort();
+    const prevDateIndex = allDates.indexOf(date) - 1;
+    if (prevDateIndex >= 0 && todayWorkers[allDates[prevDateIndex]]) {
+      workedToday = [...todayWorkers[allDates[prevDateIndex]]];
+    }
+  }
+  
+  workers.forEach(worker => {
+    const div = document.createElement('div');
+    div.className = 'checkbox-container';
+    div.innerHTML = `
+      <input 
+        type="checkbox" 
+        id="worker_${worker.name}" 
+        ${workedToday.includes(worker.name) ? 'checked' : ''}
+      >
+      <label for="worker_${worker.name}">${worker.name} (${worker.position})</label>
+    `;
+    container.appendChild(div);
+  });
+}
 
   // Save today workers
   function saveTodayWorkers() {
