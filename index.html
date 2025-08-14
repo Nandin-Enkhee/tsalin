@@ -313,10 +313,11 @@
             
             <!-- Шинэ: Хэсэгчилсэн ажлын тооцоо -->
             <div class="shift-container">
-              <h3 class="shift-header">
+              <button class="shift-header w-full text-left" onclick="toggleShiftsConfig()">
                 <i class="fas fa-users-slash mr-2"></i>Ээлжээр ажилласан ажилчдын тохируулга
-              </h3>
-              <div class="mb-4">
+              </button>
+              <div id="shiftInputsWrapper" class="hidden">
+<div class="mb-4">
                 <label>
                   <span class="block mb-1 font-medium">Ээлжийн тоо:</span>
                   <select id="shiftCount" class="input-field" onchange="renderShiftInputs()">
@@ -341,7 +342,8 @@
               </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
               <button onclick="calculateSalary()" class="btn-clean flex items-center justify-center">
                 <i class="fas fa-calculator mr-2 text-lg"></i>Цалин бодох
               </button>
@@ -732,7 +734,11 @@
   let shiftConfig = []; // Шифтийн тохиргоо
   let currentTotalAduu = 0; // Өнөөдрийн адууны тоо
 
-  // Шифтийн оролтуудыг үүсгэх
+  function toggleShiftsConfig() {
+  document.getElementById('shiftInputsWrapper').classList.toggle('hidden');
+}
+
+// Шифтийн оролтуудыг үүсгэх
   function renderShiftInputs() {
     const shiftCount = parseInt(document.getElementById('shiftCount').value);
     const shiftInputs = document.getElementById('shiftInputs');
@@ -1399,7 +1405,8 @@
         <td class="px-3 py-2">${item.name}</td>
         <td class="px-3 py-2">${item.position}</td>
         <td class="px-3 py-2">${item.desc || ''}</td>
-        <td class="px-3 py-2"></td>
+        <td class="px-3 py-2">${i + 1}</td>
+
       `;
       tbody.appendChild(row);
       totalSalary += item.salary;
@@ -1445,6 +1452,7 @@
   }
 
   // Render today workers selection
+// Render today workers selection
 function renderTodayWorkersSelect() {
   const container = document.getElementById('todayWorkersCheckboxes');
   container.innerHTML = '';
@@ -1453,19 +1461,27 @@ function renderTodayWorkersSelect() {
     container.innerHTML = '<div class="text-center py-4 text-gray-500">Ажилтан бүртгэгдээгүй байна</div>';
     return;
   }
-  
-  const date = document.getElementById('todayDateInput').value;
-  let workedToday = todayWorkers[date] || [];
 
-  // Хэрэв өнөөдөр ажилчид сонгогдоогүй бол өмнөх өдрийнхийг автоматаар авах
+  const dateInput = document.getElementById('todayDateInput');
+  const date = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0,10);
+
+  // Эхлээд өнөөдрийн өгөгдлийг авна
+  let workedToday = Array.isArray(todayWorkers[date]) ? [...todayWorkers[date]] : [];
+
+  // Хэрэв өнөөдрийн өгөгдөл хоосон бол хамгийн сүүлийн өмнөх өдрийг хайна
   if (workedToday.length === 0) {
-    const allDates = Object.keys(todayWorkers).sort();
-    const prevDateIndex = allDates.indexOf(date) - 1;
-    if (prevDateIndex >= 0 && todayWorkers[allDates[prevDateIndex]]) {
-      workedToday = [...todayWorkers[allDates[prevDateIndex]]];
+    const allDates = Object.keys(todayWorkers).sort(); // өсөх дарааллаар YYYY-MM-DD
+    const earlierDates = allDates.filter(d => d < date);
+    for (let i = earlierDates.length - 1; i >= 0; i--) {
+      const prev = earlierDates[i];
+      if (Array.isArray(todayWorkers[prev]) && todayWorkers[prev].length > 0) {
+        workedToday = [...todayWorkers[prev]];
+        break;
+      }
     }
   }
-  
+
+  // Чекбокс үүсгэж, өмнөх өдрөөс сонгогдсон нэрсийг ✔️ тэмдэглэх
   workers.forEach(worker => {
     const div = document.createElement('div');
     div.className = 'checkbox-container';
@@ -1480,6 +1496,7 @@ function renderTodayWorkersSelect() {
     container.appendChild(div);
   });
 }
+
 
   // Save today workers
   function saveTodayWorkers() {
