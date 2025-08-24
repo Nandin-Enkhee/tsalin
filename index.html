@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Адууны Цалингийн Систем </title>
+  <title>Адууны Цалингийн Систем</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -100,7 +100,7 @@
     /* Хүснэгтийн мөр, баганын зай багасгах */
     #printArea table th,
     #printArea table td {
-      padding: 2px 4px !important; /* py-2 px-3-г багасгав */
+      padding: 2px 4px !important;
       font-size: 12px !important;
     }
   
@@ -233,20 +233,23 @@
         <i class="fas fa-sign-in-alt mr-2"></i>Нэвтрэх
       </button>
       <div class="text-center mt-4 text-sm text-gray-500">
-        Анхны нууц үг: <span class="font-mono">****</span>
+        Анхны нууц үг: <span class="font-mono">1515</span>
       </div>
     </section>
 
     <!-- Main App Section -->
     <section id="appSection" class="hidden">
 
-      <!-- Navigation Tabs -->
+      <!-- Navigation Tabs - Засах цэс нэмэв -->
       <nav class="flex flex-wrap justify-center gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-2 rounded-lg">
         <button onclick="showSection('salarySection')" class="nav-btn flex items-center bg-indigo-600 text-white shadow-md" data-default>
           <i class="fas fa-calculator mr-2"></i>Цалин бодох
         </button>
         <button onclick="showSection('workersSection')" class="nav-btn flex items-center">
           <i class="fas fa-users mr-2"></i>Ажилчид
+        </button>
+        <button onclick="showSection('editWorkerSection')" class="nav-btn flex items-center">
+          <i class="fas fa-user-edit mr-2"></i>Ажилтан засах
         </button>
         <button onclick="showSection('todayWorkersSection')" class="nav-btn flex items-center">
           <i class="fas fa-calendar-day mr-2"></i>Өнөөдөр ажилласан
@@ -492,6 +495,83 @@
         </div>
       </section>
 
+      <!-- Ажилтан засах хэсэг -->
+      <section id="editWorkerSection" class="app-section hidden">
+        <h2 class="text-2xl font-bold mb-4 border-b border-gray-300 dark:border-gray-700 pb-2 flex items-center">
+          <i class="fas fa-user-edit mr-2 text-indigo-600"></i>Ажилтан засах
+        </h2>
+        
+        <div class="mb-4">
+          <label>
+            <span class="block mb-1 font-medium"><i class="fas fa-user mr-2"></i>Ажилтан сонгох:</span>
+            <select id="editWorkerSelect" class="input-field" onchange="loadWorkerData()">
+              <option value="">Ажилтан сонгох</option>
+            </select>
+          </label>
+        </div>
+        
+        <div id="editWorkerForm" class="hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label>
+                <span class="block mb-1 font-medium"><i class="fas fa-user mr-2"></i>Нэр:</span>
+                <input id="editWorkerName" type="text" class="input-field" placeholder="Ажилтны нэр" />
+              </label>
+            </div>
+            
+            <div>
+              <label>
+                <span class="block mb-1 font-medium"><i class="fas fa-briefcase mr-2"></i>Албан тушаал:</span>
+                <select id="editWorkerPosition" class="input-field">
+                  <option value="">Сонгох</option>
+                  <option>Бой</option>
+                  <option>Гэдэс</option>
+                  <option>Хөргүүр</option>
+                  <option>Тогооч</option>
+                  <option>Үйлчлэгч</option>
+                  <option>Умс</option>
+                  <option>Яс</option>
+                  <option>Мах</option>
+                  <option>Бүртгэл</option>
+                </select>
+              </label>
+            </div>
+            
+            <div>
+              <label>
+                <span class="block mb-1 font-medium"><i class="fas fa-file-alt mr-2"></i>Тайлбар:</span>
+                <input id="editWorkerDesc" type="text" class="input-field" placeholder="Нэмэлт мэдээлэл" />
+              </label>
+            </div>
+            
+            <div>
+              <label>
+                <span class="block mb-1 font-medium"><i class="fas fa-phone mr-2"></i>Утасны дугаар:</span>
+                <input id="editWorkerPhone" type="text" class="input-field" placeholder="99112233" />
+              </label>
+            </div>
+            
+            <div>
+              <label>
+                <span class="block mb-1 font-medium"><i class="fas fa-wallet mr-2"></i>Банкны данс:</span>
+                <input id="editWorkerBank" type="text" class="input-field" placeholder="Дансны дугаар" />
+              </label>
+            </div>
+            
+            <div id="editSalaryFieldContainer" class="hidden">
+              <label>
+                <span class="block mb-1 font-medium"><i class="fas fa-money-bill-wave mr-2"></i>Цалин:</span>
+                <input id="editWorkerSalary" type="number" min="0" class="input-field" placeholder="100000" />
+              </label>
+            </div>
+          </div>
+          
+          <button onclick="updateWorker()" class="btn-clean mt-6 w-full py-3">
+            <i class="fas fa-save mr-2"></i>Хадгалах
+          </button>
+        </div>
+      </section>
+
       <!-- Today Workers Section -->
       <section id="todayWorkersSection" class="app-section hidden">
         <h2 class="text-2xl font-bold mb-4 border-b border-gray-300 dark:border-gray-700 pb-2 flex items-center">
@@ -733,6 +813,7 @@
   let salaryChanges = {}; // Цалингийн өөрчлөлтүүдийг хадгалах
   let shiftConfig = []; // Шифтийн тохиргоо
   let currentTotalAduu = 0; // Өнөөдрийн адууны тоо
+  let currentEditingWorkerIndex = -1; // Засагдаж буй ажилтны индекс
 
   function toggleShiftsConfig() {
   document.getElementById('shiftInputsWrapper').classList.toggle('hidden');
@@ -791,7 +872,7 @@
     }
   }
 
-  // Шифтээр цалин тооцох
+  // Шифтээр цалин тооцох - 1000-аар доош дугуйруулах нэмэлт
   function calculateShiftSalaries() {
     const shiftCount = parseInt(document.getElementById('shiftCount').value);
     shiftConfig = [];
@@ -821,13 +902,16 @@
         return;
       }
       
-      // Шифтийн тохиргоог хадгалах
+      // Шифтийн тохиргоог хадгалах (1000-аар доош дугуйруулсан)
+      let calculatedSalary = Math.floor((horses * 18000) / workerCount);
+      let roundedSalary = Math.floor(calculatedSalary / 1000) * 1000;
+      
       shiftConfig.push({
         shift: i,
         horses: horses,
         workerCount: workerCount,
         workers: selectedWorkers,
-        salaryPerWorker: Math.floor((horses * 18000) / workerCount)
+        salaryPerWorker: roundedSalary
       });
     }
     
@@ -857,7 +941,7 @@
     salaryContainer.classList.toggle('hidden', this.value !== 'Тогооч');
   });
 
-  // Login
+  // Login функц
   function login() {
     const pw = document.getElementById('passwordInput').value;
     if (pw === '1515') {
@@ -867,10 +951,108 @@
       refreshAll();
       updateDashboard();
       populateWorkerDropdowns();
-      renderShiftInputs(); // Шифтийн оролтуудыг анхны утгаар үүсгэх
+      renderShiftInputs();
+      
+      // Засах хэсгийн ажилтан сонгох dropdown-г бөглөх
+      populateEditWorkerSelect();
     } else {
       alert('Нууц үг буруу байна');
     }
+  }
+
+  // Засах хэсгийн ажилтан сонгох dropdown-г бөглөх
+  function populateEditWorkerSelect() {
+    const select = document.getElementById('editWorkerSelect');
+    select.innerHTML = '<option value="">Ажилтан сонгох</option>';
+    
+    workers.forEach((worker, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `${worker.name} (${worker.position})`;
+      select.appendChild(option);
+    });
+  }
+
+  // Сонгогдсон ажилтны мэдээллийг формруу ачаалах
+  function loadWorkerData() {
+    const select = document.getElementById('editWorkerSelect');
+    const index = parseInt(select.value);
+    
+    if (isNaN(index)) {
+      document.getElementById('editWorkerForm').classList.add('hidden');
+      return;
+    }
+    
+    currentEditingWorkerIndex = index;
+    const worker = workers[index];
+    
+    document.getElementById('editWorkerName').value = worker.name || '';
+    document.getElementById('editWorkerPosition').value = worker.position || '';
+    document.getElementById('editWorkerDesc').value = worker.desc || '';
+    document.getElementById('editWorkerPhone').value = worker.phone || '';
+    document.getElementById('editWorkerBank').value = worker.bank || '';
+    
+    // Тогооч бол цалингийн талбар харуулах
+    const salaryContainer = document.getElementById('editSalaryFieldContainer');
+    if (worker.position === 'Тогооч') {
+      salaryContainer.classList.remove('hidden');
+      document.getElementById('editWorkerSalary').value = worker.salary || 100000;
+    } else {
+      salaryContainer.classList.add('hidden');
+    }
+    
+    document.getElementById('editWorkerForm').classList.remove('hidden');
+  }
+
+  // Албан тушаал солигдох үед цалингийн талбарыг харуулах/нуух
+  document.getElementById('editWorkerPosition').addEventListener('change', function() {
+    const salaryContainer = document.getElementById('editSalaryFieldContainer');
+    salaryContainer.classList.toggle('hidden', this.value !== 'Тогооч');
+  });
+
+  // Ажилтны мэдээллийг шинэчлэх
+  function updateWorker() {
+    if (currentEditingWorkerIndex === -1) return;
+    
+    const name = document.getElementById('editWorkerName').value.trim();
+    const position = document.getElementById('editWorkerPosition').value;
+    const desc = document.getElementById('editWorkerDesc').value.trim();
+    const phone = document.getElementById('editWorkerPhone').value.trim();
+    const bank = document.getElementById('editWorkerBank').value.trim();
+    let salary = document.getElementById('editWorkerSalary').value;
+    
+    if (!name || !position) {
+      alert('Нэр болон албан тушаалыг бөглөнө үү');
+      return;
+    }
+    
+    // If it's a cook, validate salary
+    if (position === 'Тогооч') {
+      if (!salary || isNaN(salary)) {
+        alert('Тогочийн цалингийн мэдээллийг оруулна уу');
+        return;
+      }
+      salary = Number(salary);
+    }
+    
+    // Ажилтны мэдээллийг шинэчлэх
+    workers[currentEditingWorkerIndex] = {
+      ...workers[currentEditingWorkerIndex],
+      name,
+      position,
+      desc,
+      phone,
+      bank,
+      salary: position === 'Тогооч' ? salary : undefined
+    };
+    
+    saveWorkers();
+    alert('Ажилтны мэдээлэл амжилттай шинэчлэгдлээ');
+    
+    // Бусад хэсгүүдийг шинэчлэх
+    refreshAll();
+    populateEditWorkerSelect();
+    showSection('workersSection');
   }
 
   // Populate worker dropdowns for bonus, advance and loan
@@ -935,6 +1117,11 @@
       document.getElementById('workerBank').value = '';
       document.getElementById('workerSalary').value = '';
       document.getElementById('salaryFieldContainer').classList.add('hidden');
+    }
+    if (id === 'editWorkerSection') {
+      // Reset form
+      document.getElementById('editWorkerSelect').value = '';
+      document.getElementById('editWorkerForm').classList.add('hidden');
     }
   }
 
@@ -1102,7 +1289,7 @@
     renderSalaryTable();
   }
 
-  // Цалин бодох
+  // Цалин бодох - 1000-аар доош дугуйруулах нэмэлт
   function calculateSalary() {
     const totalAduu = Number(document.getElementById('totalAduuInput').value);
     currentTotalAduu = totalAduu;
@@ -1146,16 +1333,22 @@
           // Apply shift calculation for boys
           shiftConfig.forEach(config => {
             if (config.workers.includes(worker.name)) {
-              salary += config.salaryPerWorker;
+              // 1000-аар доош дугуйруулах
+              let calculatedSalary = config.salaryPerWorker;
+              salary += Math.floor(calculatedSalary / 1000) * 1000;
             }
           });
         } else {
           const cnt = countByPosition['Бой'] || 1;
-          salary = Math.floor((totalAduu * 18000) / cnt);
+          let calculatedSalary = Math.floor((totalAduu * 18000) / cnt);
+          // 1000-аар доош дугуйруулах
+          salary = Math.floor(calculatedSalary / 1000) * 1000;
         }
       } else if (worker.position === 'Гэдэс') {
         const cnt = countByPosition['Гэдэс'] || 1;
-        salary = Math.floor((totalAduu * 4000) / cnt);
+        let calculatedSalary = Math.floor((totalAduu * 4000) / cnt);
+        // Гэдэс ажилчдын цалинг мөн 1000-аар доош дугуйруулах
+        salary = Math.floor(calculatedSalary / 1000) * 1000;
       } else {
         // Хөргүүр, Умс, Яс, Мах, Бүртгэл байрлалууд
         if (totalAduu < 70) {
@@ -1585,6 +1778,7 @@ function renderTodayWorkersSelect() {
     renderWorkers();
     updateDashboard();
     populateWorkerDropdowns();
+    populateEditWorkerSelect();
     showSection('workersSection');
   }
 
@@ -1623,6 +1817,7 @@ function renderTodayWorkersSelect() {
       renderWorkers();
       updateDashboard();
       populateWorkerDropdowns();
+      populateEditWorkerSelect();
       alert('Ажилтан амжилттай устгагдлаа');
     }
   }
@@ -1847,6 +2042,12 @@ function renderTodayWorkersSelect() {
               </tr>
             `).join('')}
           </tbody>
+          <tfoot>
+            <tr class="bg-gray-100 dark:bg-gray-800 font-bold">
+              <td colspan="3" class="px-3 py-2 text-right">Нийт:</td>
+              <td class="px-3 py-2 text-right">${totalSalary.toLocaleString()}₮</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     `;
@@ -1888,7 +2089,8 @@ function renderTodayWorkersSelect() {
     renderRemoveWorkers();
     renderSalaryHistory();
     populateWorkerDropdowns();
-    renderShiftInputs(); // Шифтийн оролтуудыг анхны утгаар үүсгэх
+    populateEditWorkerSelect();
+    renderShiftInputs();
   }
 
 </script>
