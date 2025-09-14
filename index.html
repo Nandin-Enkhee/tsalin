@@ -1012,7 +1012,7 @@
     
     sortedWorkers.forEach((worker, index) => {
       const option = document.createElement('option');
-      option.value = index;
+      option.value = worker.name;
       option.textContent = `${worker.name} (${worker.position})`;
       select.appendChild(option);
     });
@@ -1021,23 +1021,29 @@
   // Сонгогдсон ажилтны мэдээллийг формруу ачаалах
   function loadWorkerData() {
     const select = document.getElementById('editWorkerSelect');
-    const index = parseInt(select.value);
+    const selectedName = select.value;
     
-    if (isNaN(index)) {
+    if (!selectedName) {
       document.getElementById('editWorkerForm').classList.add('hidden');
       return;
     }
-    
-    currentEditingWorkerIndex = index;
-    const worker = workers[index];
-    
+  
+    const workerIndex = workers.findIndex(w => w.name === selectedName);
+    if (workerIndex === -1) {
+      alert('Сонгосон ажилтан олдсонгүй');
+      document.getElementById('editWorkerForm').classList.add('hidden');
+      return;
+    }
+  
+    currentEditingWorkerIndex = workerIndex;
+    const worker = workers[workerIndex];
+  
     document.getElementById('editWorkerName').value = worker.name || '';
     document.getElementById('editWorkerPosition').value = worker.position || '';
     document.getElementById('editWorkerDesc').value = worker.desc || '';
     document.getElementById('editWorkerPhone').value = worker.phone || '';
     document.getElementById('editWorkerBank').value = worker.bank || '';
-    
-    // Тогооч бол цалингийн талбар харуулах
+  
     const salaryContainer = document.getElementById('editSalaryFieldContainer');
     if (worker.position === 'Тогооч') {
       salaryContainer.classList.remove('hidden');
@@ -1045,10 +1051,10 @@
     } else {
       salaryContainer.classList.add('hidden');
     }
-    
+  
     document.getElementById('editWorkerForm').classList.remove('hidden');
   }
-
+  
   // Албан тушаал солигдох үед цалингийн талбарыг харуулах/нуух
   document.getElementById('editWorkerPosition').addEventListener('change', function() {
     const salaryContainer = document.getElementById('editSalaryFieldContainer');
@@ -1862,9 +1868,12 @@
   }
 
   // Remove worker
-  function removeWorker(index) {
-    if (confirm(`"${workers[index].name}" ажилтанг устгахдаа итгэлтэй байна уу?`)) {
-      workers.splice(index, 1);
+  function removeWorker(arg) {
+    const idx = typeof arg === 'number' ? arg : workers.findIndex(w => w.name === arg);
+    if (idx === -1) return alert('Ажилтан олдсонгүй');
+  
+    if (confirm(`"${workers[idx].name}" ажилтанг устгахдаа итгэлтэй байна уу?`)) {
+      workers.splice(idx, 1);
       saveWorkers();
       renderRemoveWorkers();
       renderWorkers();
@@ -1874,6 +1883,7 @@
       alert('Ажилтан амжилттай устгагдлаа');
     }
   }
+  
 
   // Populate worker select for history
   function populateWorkerSelect() {
