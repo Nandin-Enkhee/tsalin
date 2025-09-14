@@ -6,6 +6,7 @@
   <title>Адууны Цалингийн Систем</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     @media (prefers-color-scheme: dark) {
       html {
@@ -443,25 +444,27 @@
                 <th class="px-4 py-3">Нэр</th>
                 <th class="px-4 py-3">Албан тушаал</th>
                 <th class="px-4 py-3">Тайлбар</th>
+                <th class="px-4 py-3">Утас</th>
+                <th class="px-4 py-3">Данс</th>
                 <th class="px-4 py-3 text-right">Цалин (₮)</th>
                 <th class="px-4 py-3 w-32">Үйлдэл</th>
               </tr>
             </thead>
             <tbody id="salaryTableBody" class="divide-y divide-gray-300 dark:divide-gray-700">
               <tr>
-                <td colspan="5" class="text-center py-6 text-gray-500">
+                <td colspan="7" class="text-center py-6 text-gray-500">
                   <i class="fas fa-info-circle mr-2"></i>Цалин бодоогүй байна эсвэл ажилчид байхгүй байна
                 </td>
               </tr>
             </tbody>
             <tfoot class="bg-indigo-50 dark:bg-indigo-900/20 font-bold">
               <tr>
-                <td colspan="3" class="px-4 py-3 text-right">Нийт дүн:</td>
+                <td colspan="5" class="px-4 py-3 text-right">Нийт дүн:</td>
                 <td id="totalSalaryAmount" class="px-4 py-3 text-right">0</td>
                 <td></td>
               </tr>
               <tr>
-                <td colspan="3" class="px-4 py-3 text-right">Нийт адууны тоо:</td>
+                <td colspan="5" class="px-4 py-3 text-right">Нийт адууны тоо:</td>
                 <td id="totalHorsesCount" class="px-4 py-3 text-right">0</td>
                 <td></td>
               </tr>
@@ -736,6 +739,9 @@
             </div>
           </div>
           <div id="reportDetails" class="mt-4"></div>
+          <button onclick="exportToExcel()" class="btn-clean mt-4">
+            <i class="fas fa-file-excel mr-2"></i>Excel-д татах
+          </button>
         </div>
         
         <div id="historyFolders" class="space-y-3"></div>
@@ -762,6 +768,8 @@
               <th class="border border-gray-300 px-3 py-2">Нэр</th>
               <th class="border border-gray-300 px-3 py-2">Албан тушаал</th>
               <th class="border border-gray-300 px-3 py-2">Тайлбар</th>
+              <th class="border border-gray-300 px-3 py-2">Утас</th>
+              <th class="border border-gray-300 px-3 py-2">Данс</th>
               <th class="border border-gray-300 px-3 py-2">Гарын үсэг</th>
             </tr>
           </thead>
@@ -772,7 +780,7 @@
               <td class="border border-gray-300"></td>
             </tr>
             <tr>
-              <td colspan="4" class="border border-gray-300 px-3 py-2 text-right font-bold">Нийт адууны тоо:</td>
+              <td colspan="5" class="border border-gray-300 px-3 py-2 text-right font-bold">Нийт адууны тоо:</td>
               <td class="border border-gray-300 px-3 py-2 text-right font-bold" id="printHorses"></td>
               <td class="border border-gray-300"></td>
             </tr>
@@ -814,19 +822,54 @@
   let shiftConfig = []; // Шифтийн тохиргоо
   let currentTotalAduu = 0; // Өнөөдрийн адууны тоо
   let currentEditingWorkerIndex = -1; // Засагдаж буй ажилтны индекс
+  let currentReportData = []; // Тайлангийн өгөгдөл
+
+  // Ажилчдыг эрэмбэлэх функц (албан тушаалаар, дараа нь нэрээр)
+  function sortWorkers(workersList) {
+    const positionOrder = {
+      'Толгой': 1,
+      'Бой': 2,
+      'Гэдэс': 3,
+      'Хөргүүр': 4,
+      'Умс': 5,
+      'Яс': 6,
+      'Мах': 7,
+      'Бүртгэл': 8,
+      'Тогооч': 9,
+      'Үйлчлэгч': 10,
+      'Нэмэлт': 11
+    };
+
+    return workersList.sort((a, b) => {
+      const aPos = positionOrder[a.position] || 99;
+      const bPos = positionOrder[b.position] || 99;
+      
+      if (aPos !== bPos) {
+        return aPos - bPos;
+      }
+      
+      // Монгол үсгийн дарааллаар эрэмбэлэх
+      return a.name.localeCompare(b.name, 'mn');
+    });
+  }
+
+  // Ажилчдын нэр давхардалтыг шалгах функц
+  function isWorkerNameDuplicate(name) {
+    return workers.some(worker => worker.name.toLowerCase() === name.toLowerCase());
+  }
 
   function toggleShiftsConfig() {
-  document.getElementById('shiftInputsWrapper').classList.toggle('hidden');
-}
+    document.getElementById('shiftInputsWrapper').classList.toggle('hidden');
+  }
 
-// Шифтийн оролтуудыг үүсгэх
+  // Шифтийн оролтуудыг үүсгэх
   function renderShiftInputs() {
     const shiftCount = parseInt(document.getElementById('shiftCount').value);
     const shiftInputs = document.getElementById('shiftInputs');
     shiftInputs.innerHTML = '';
     
     // Зөвхөн "Бой" ажилчдыг харуулах
-    const boyWorkers = workers.filter(w => w.position === 'Бой').map(w => w.name);
+    const boyWorkers = sortWorkers(workers.filter(w => w.position === 'Бой'));
     
     for (let i = 1; i <= shiftCount; i++) {
       const shiftDiv = document.createElement('div');
@@ -856,16 +899,16 @@
       
       // Ажилчдын сонголтуудыг нэмэх
       const workerCheckboxes = document.getElementById(`shiftWorkerCheckboxes${i}`);
-      boyWorkers.forEach(name => {
+      boyWorkers.forEach(worker => {
         const div = document.createElement('div');
         div.className = 'shift-worker-item';
         div.innerHTML = `
           <input 
             type="checkbox" 
-            id="shift${i}_${name}" 
+            id="shift${i}_${worker.name}" 
             class="mr-2"
           >
-          <label for="shift${i}_${name}">${name}</label>
+          <label for="shift${i}_${worker.name}">${worker.name}</label>
         `;
         workerCheckboxes.appendChild(div);
       });
@@ -965,7 +1008,9 @@
     const select = document.getElementById('editWorkerSelect');
     select.innerHTML = '<option value="">Ажилтан сонгох</option>';
     
-    workers.forEach((worker, index) => {
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach((worker, index) => {
       const option = document.createElement('option');
       option.value = index;
       option.textContent = `${worker.name} (${worker.position})`;
@@ -1066,7 +1111,9 @@
     advanceSelect.innerHTML = '<option value="">Ажилтан сонгох</option>';
     loanSelect.innerHTML = '<option value="">Ажилтан сонгох</option>';
     
-    workers.forEach(worker => {
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach(worker => {
       const option = document.createElement('option');
       option.value = worker.name;
       option.textContent = worker.name;
@@ -1140,7 +1187,9 @@
       return;
     }
     
-    workers.forEach(worker => {
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach(worker => {
       const card = document.createElement('div');
       card.className = 'worker-card';
       card.innerHTML = `
@@ -1362,6 +1411,8 @@
         name: worker.name,
         position: worker.position,
         desc: worker.desc || '',
+        phone: worker.phone || '',
+        bank: worker.bank || '',
         salary: salary
       });
     });
@@ -1372,21 +1423,15 @@
         name: worker.name,
         position: worker.position,
         desc: worker.desc,
+        phone: '',
+        bank: '',
         salary: worker.salary,
         manual: true
       });
     });
 
-    // Албан тушаалаар эрэмбэлэх: Бой -> Гэдэс -> Бусад
-    const positionOrder = ['Бой', 'Гэдэс', 'Хөргүүр', 'Умс', 'Яс', 'Мах', 'Бүртгэл', 'Тогооч', 'Үйлчлэгч', 'Нэмэлт', 'Толгой'];
-    latestSalaryCalc.sort((a, b) => {
-      const aIndex = positionOrder.indexOf(a.position);
-      const bIndex = positionOrder.indexOf(b.position);
-      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-      return a.position.localeCompare(b.position);
-    });
+    // Албан тушаалаар эрэмбэлэх
+    latestSalaryCalc = sortWorkers(latestSalaryCalc);
 
     renderSalaryTable();
   }
@@ -1399,7 +1444,7 @@
     if (latestSalaryCalc.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center py-6 text-gray-500">
+          <td colspan="7" class="text-center py-6 text-gray-500">
             <i class="fas fa-info-circle mr-2"></i>Цалин бодоогүй байна эсвэл ажилчид байхгүй байна
           </td>
         </tr>
@@ -1431,6 +1476,8 @@
         <td class="px-4 py-2">${item.name}</td>
         <td class="px-4 py-2">${item.position}</td>
         <td class="px-4 py-2">${item.desc || ''}</td>
+        <td class="px-4 py-2">${item.phone || ''}</td>
+        <td class="px-4 py-2">${item.bank || ''}</td>
         <td class="px-4 py-2 text-right ${displaySalary < 0 ? 'text-red-600' : ''}">
           ${displaySalary.toLocaleString()}
         </td>
@@ -1463,6 +1510,8 @@
       <td class="px-4 py-2">${latestSalaryCalc[index].name}</td>
       <td class="px-4 py-2">${latestSalaryCalc[index].position}</td>
       <td class="px-4 py-2">${latestSalaryCalc[index].desc || ''}</td>
+      <td class="px-4 py-2">${latestSalaryCalc[index].phone || ''}</td>
+      <td class="px-4 py-2">${latestSalaryCalc[index].bank || ''}</td>
       <td class="px-4 py-2">
         <input 
           type="number" 
@@ -1573,15 +1622,7 @@
     let totalSalary = 0;
     
     // Албан тушаалаар эрэмбэлэх
-    const positionOrder = ['Бой', 'Гэдэс', 'Хөргүүр', 'Умс', 'Яс', 'Мах', 'Бүртгэл', 'Тогооч', 'Үйлчлэгч', 'Нэмэлт', 'Толгой'];
-    latestSalaryCalc.sort((a, b) => {
-      const aIndex = positionOrder.indexOf(a.position);
-      const bIndex = positionOrder.indexOf(b.position);
-      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-      return a.position.localeCompare(b.position);
-    });
+    latestSalaryCalc = sortWorkers(latestSalaryCalc);
     
     latestSalaryCalc.forEach((item, i) => {
       const row = document.createElement('tr');
@@ -1598,8 +1639,9 @@
         <td class="px-3 py-2">${item.name}</td>
         <td class="px-3 py-2">${item.position}</td>
         <td class="px-3 py-2">${item.desc || ''}</td>
+        <td class="px-3 py-2">${item.phone || ''}</td>
+        <td class="px-3 py-2">${item.bank || ''}</td>
         <td class="px-3 py-2">${i + 1}</td>
-
       `;
       tbody.appendChild(row);
       totalSalary += item.salary;
@@ -1645,51 +1687,51 @@
   }
 
   // Render today workers selection
-// Render today workers selection
-function renderTodayWorkersSelect() {
-  const container = document.getElementById('todayWorkersCheckboxes');
-  container.innerHTML = '';
-  
-  if (workers.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-gray-500">Ажилтан бүртгэгдээгүй байна</div>';
-    return;
-  }
+  function renderTodayWorkersSelect() {
+    const container = document.getElementById('todayWorkersCheckboxes');
+    container.innerHTML = '';
+    
+    if (workers.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-gray-500">Ажилтан бүртгэгдээгүй байна</div>';
+      return;
+    }
 
-  const dateInput = document.getElementById('todayDateInput');
-  const date = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0,10);
+    const dateInput = document.getElementById('todayDateInput');
+    const date = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().slice(0,10);
 
-  // Эхлээд өнөөдрийн өгөгдлийг авна
-  let workedToday = Array.isArray(todayWorkers[date]) ? [...todayWorkers[date]] : [];
+    // Эхлээд өнөөдрийн өгөгдлийг авна
+    let workedToday = Array.isArray(todayWorkers[date]) ? [...todayWorkers[date]] : [];
 
-  // Хэрэв өнөөдрийн өгөгдөл хоосон бол хамгийн сүүлийн өмнөх өдрийг хайна
-  if (workedToday.length === 0) {
-    const allDates = Object.keys(todayWorkers).sort(); // өсөх дарааллаар YYYY-MM-DD
-    const earlierDates = allDates.filter(d => d < date);
-    for (let i = earlierDates.length - 1; i >= 0; i--) {
-      const prev = earlierDates[i];
-      if (Array.isArray(todayWorkers[prev]) && todayWorkers[prev].length > 0) {
-        workedToday = [...todayWorkers[prev]];
-        break;
+    // Хэрэв өнөөдрийн өгөгдөл хоосон бол хамгийн сүүлийн өмнөх өдрийг хайна
+    if (workedToday.length === 0) {
+      const allDates = Object.keys(todayWorkers).sort(); // өсөх дарааллаар YYYY-MM-DD
+      const earlierDates = allDates.filter(d => d < date);
+      for (let i = earlierDates.length - 1; i >= 0; i--) {
+        const prev = earlierDates[i];
+        if (Array.isArray(todayWorkers[prev]) && todayWorkers[prev].length > 0) {
+          workedToday = [...todayWorkers[prev]];
+          break;
+        }
       }
     }
+
+    // Чекбокс үүсгэж, өмнөх өдрөөс сонгогдсон нэрсийг ✔️ тэмдэглэх
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach(worker => {
+      const div = document.createElement('div');
+      div.className = 'checkbox-container';
+      div.innerHTML = `
+        <input 
+          type="checkbox" 
+          id="worker_${worker.name}" 
+          ${workedToday.includes(worker.name) ? 'checked' : ''}
+        >
+        <label for="worker_${worker.name}">${worker.name} (${worker.position})</label>
+      `;
+      container.appendChild(div);
+    });
   }
-
-  // Чекбокс үүсгэж, өмнөх өдрөөс сонгогдсон нэрсийг ✔️ тэмдэглэх
-  workers.forEach(worker => {
-    const div = document.createElement('div');
-    div.className = 'checkbox-container';
-    div.innerHTML = `
-      <input 
-        type="checkbox" 
-        id="worker_${worker.name}" 
-        ${workedToday.includes(worker.name) ? 'checked' : ''}
-      >
-      <label for="worker_${worker.name}">${worker.name} (${worker.position})</label>
-    `;
-    container.appendChild(div);
-  });
-}
-
 
   // Save today workers
   function saveTodayWorkers() {
@@ -1724,10 +1766,10 @@ function renderTodayWorkersSelect() {
       return;
     }
     
-    workedToday.forEach(name => {
-      const worker = workers.find(w => w.name === name);
-      if (!worker) return;
-      
+    // Албан тушаалаар эрэмбэлэх
+    const sortedWorkers = sortWorkers(workers.filter(w => workedToday.includes(w.name)));
+    
+    sortedWorkers.forEach(worker => {
       const div = document.createElement('div');
       div.className = 'worker-item';
       div.innerHTML = `
@@ -1755,6 +1797,12 @@ function renderTodayWorkersSelect() {
       return;
     }
     
+    // Нэр давхардалтыг шалгах
+    if (isWorkerNameDuplicate(name)) {
+      alert(`"${name}" нэртэй ажилтан бүртгэлтэй байна. Өөр нэр оруулна уу.`);
+      return;
+    }
+    
     // If it's a cook, validate salary
     if (position === 'Тогооч') {
       if (!salary || isNaN(salary)) {
@@ -1772,6 +1820,9 @@ function renderTodayWorkersSelect() {
       bank,
       salary: position === 'Тогооч' ? salary : undefined
     });
+    
+    // Ажилчдыг эрэмбэлэх
+    workers = sortWorkers(workers);
     
     saveWorkers();
     alert('Ажилтан амжилттай нэмэгдлээ');
@@ -1792,7 +1843,9 @@ function renderTodayWorkersSelect() {
       return;
     }
     
-    workers.forEach((worker, index) => {
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach((worker, index) => {
       const div = document.createElement('div');
       div.className = 'worker-item';
       div.innerHTML = `
@@ -1827,7 +1880,9 @@ function renderTodayWorkersSelect() {
     const select = document.getElementById('historyWorkerSelect');
     select.innerHTML = '<option value="">Бүгд</option>';
     
-    workers.forEach(worker => {
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach(worker => {
       const option = document.createElement('option');
       option.value = worker.name;
       option.textContent = worker.name;
@@ -1919,15 +1974,7 @@ function renderTodayWorkersSelect() {
     content.innerHTML = '';
     
     // Sort records by position
-    const positionOrder = ['Бой', 'Гэдэс', 'Хөргүүр', 'Умс', 'Яс', 'Мах', 'Бүртгэл', 'Тогооч', 'Үйлчлэгч', 'Нэмэлт', 'Толгой'];
-    records.sort((a, b) => {
-      const aIndex = positionOrder.indexOf(a.position);
-      const bIndex = positionOrder.indexOf(b.position);
-      if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-      return a.position.localeCompare(b.position);
-    });
+    const sortedRecords = sortWorkers(records);
     
     // Create a table for the daily report
     const table = document.createElement('table');
@@ -1938,13 +1985,15 @@ function renderTodayWorkersSelect() {
           <th class="px-4 py-2 text-left">Нэр</th>
           <th class="px-4 py-2 text-left">Албан тушаал</th>
           <th class="px-4 py-2 text-left">Тайлбар</th>
+          <th class="px-4 py-2 text-left">Утас</th>
+          <th class="px-4 py-2 text-left">Данс</th>
           <th class="px-4 py-2 text-right">Цалин (₮)</th>
         </tr>
       </thead>
       <tbody id="historyTableBody-${date}"></tbody>
       <tfoot>
         <tr class="bg-gray-100 dark:bg-gray-800">
-          <td colspan="3" class="px-4 py-2 text-right font-bold">Нийт:</td>
+          <td colspan="5" class="px-4 py-2 text-right font-bold">Нийт:</td>
           <td class="px-4 py-2 text-right font-bold" id="historyTotal-${date}"></td>
         </tr>
       </tfoot>
@@ -1955,7 +2004,7 @@ function renderTodayWorkersSelect() {
     const tbody = document.getElementById(`historyTableBody-${date}`);
     let total = 0;
     
-    records.forEach(item => {
+    sortedRecords.forEach(item => {
       const row = document.createElement('tr');
       row.className = 'border-b border-gray-300 dark:border-gray-700';
       if (item.position === 'Хувцас') {
@@ -1969,6 +2018,8 @@ function renderTodayWorkersSelect() {
         <td class="px-4 py-2">${item.name}</td>
         <td class="px-4 py-2">${item.position}</td>
         <td class="px-4 py-2">${item.desc || ''}</td>
+        <td class="px-4 py-2">${item.phone || ''}</td>
+        <td class="px-4 py-2">${item.bank || ''}</td>
         <td class="px-4 py-2 text-right ${item.salary < 0 ? 'text-red-600' : ''}">${item.salary.toLocaleString()}</td>
       `;
       tbody.appendChild(row);
@@ -1984,22 +2035,20 @@ function renderTodayWorkersSelect() {
     const startDate = document.getElementById('historyStartDate').value;
     const endDate = document.getElementById('historyEndDate').value;
     
-    if (!workerName) {
-      alert('Ажилтанг сонгоно уу');
-      return;
-    }
-    
     if (!startDate || !endDate) {
       alert('Эхлэх болон дуусах огноог сонгоно уу');
       return;
     }
     
     // Filter salary history
-    const filtered = salaryHistory.filter(item => {
-      return item.name === workerName && 
-             item.date >= startDate && 
-             item.date <= endDate;
+    let filtered = salaryHistory.filter(item => {
+      return item.date >= startDate && item.date <= endDate;
     });
+    
+    // Хэрэв ажилтан сонгогдсон бол шүүх
+    if (workerName) {
+      filtered = filtered.filter(item => item.name === workerName);
+    }
     
     if (filtered.length === 0) {
       alert('Сонгосон хугацаанд цалингийн мэдээлэл олдсонгүй');
@@ -2013,20 +2062,95 @@ function renderTodayWorkersSelect() {
     const workDays = [...new Set(filtered.map(item => item.date))].length;
     
     // Display report
-    document.getElementById('reportWorkerName').textContent = workerName;
+    document.getElementById('reportWorkerName').textContent = workerName || 'Бүх ажилчид';
     document.getElementById('reportDateRange').textContent = `${startDate} - ${endDate}`;
     document.getElementById('reportWorkDays').textContent = `${workDays} өдөр`;
     document.getElementById('reportTotalSalary').textContent = `${totalSalary.toLocaleString()}₮`;
     
     // Add detailed report
     const reportDetails = document.getElementById('reportDetails');
-    reportDetails.innerHTML = `
+    
+    // Group by worker if showing all workers
+    let reportHTML = '';
+    if (!workerName) {
+      // Group by worker
+      const byWorker = {};
+      filtered.forEach(item => {
+        if (!byWorker[item.name]) {
+          byWorker[item.name] = {
+            total: 0,
+            records: []
+          };
+        }
+        byWorker[item.name].total += item.salary;
+        byWorker[item.name].records.push(item);
+      });
+      
+      // Sort workers by position and name
+      const sortedWorkers = Object.keys(byWorker).sort((a, b) => {
+        const workerA = workers.find(w => w.name === a) || { position: '' };
+        const workerB = workers.find(w => w.name === b) || { position: '' };
+        
+        const positionOrder = {
+          'Толгой': 1,
+          'Бой': 2,
+          'Гэдэс': 3,
+          'Хөргүүр': 4,
+          'Умс': 5,
+          'Яс': 6,
+          'Мах': 7,
+          'Бүртгэл': 8,
+          'Тогооч': 9,
+          'Үйлчлэгч': 10,
+          'Нэмэлт': 11
+        };
+        
+        const aPos = positionOrder[workerA.position] || 99;
+        const bPos = positionOrder[workerB.position] || 99;
+        
+        if (aPos !== bPos) {
+          return aPos - bPos;
+        }
+        
+        return a.localeCompare(b, 'mn');
+      });
+      
+      reportHTML = `
+        <h4 class="font-bold mb-2 border-b pb-1">Ажилчдын хуваарь</h4>
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-200 dark:bg-gray-700">
+                <th class="px-3 py-2 text-left">Ажилтан</th>
+                <th class="px-3 py-2 text-left">Албан тушаал</th>
+                <th class="px-3 py-2 text-right">Нийт цалин</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedWorkers.map(name => {
+                const worker = workers.find(w => w.name === name) || { position: '' };
+                return `
+                  <tr class="border-b border-gray-200 dark:border-gray-700">
+                    <td class="px-3 py-2">${name}</td>
+                    <td class="px-3 py-2">${worker.position}</td>
+                    <td class="px-3 py-2 text-right">${byWorker[name].total.toLocaleString()}₮</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+    
+    reportHTML += `
       <h4 class="font-bold mb-2 border-b pb-1">Дэлгэрэнгүй мэдээлэл</h4>
       <div class="overflow-x-auto">
         <table class="w-full text-sm border-collapse">
           <thead>
             <tr class="bg-gray-200 dark:bg-gray-700">
               <th class="px-3 py-2 text-left">Огноо</th>
+              <th class="px-3 py-2 text-left">Ажилтан</th>
               <th class="px-3 py-2 text-left">Албан тушаал</th>
               <th class="px-3 py-2 text-left">Тайлбар</th>
               <th class="px-3 py-2 text-right">Цалин (₮)</th>
@@ -2036,6 +2160,7 @@ function renderTodayWorkersSelect() {
             ${filtered.map(item => `
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <td class="px-3 py-2">${item.date}</td>
+                <td class="px-3 py-2">${item.name}</td>
                 <td class="px-3 py-2">${item.position}</td>
                 <td class="px-3 py-2">${item.desc || ''}</td>
                 <td class="px-3 py-2 text-right">${item.salary.toLocaleString()}</td>
@@ -2044,7 +2169,7 @@ function renderTodayWorkersSelect() {
           </tbody>
           <tfoot>
             <tr class="bg-gray-100 dark:bg-gray-800 font-bold">
-              <td colspan="3" class="px-3 py-2 text-right">Нийт:</td>
+              <td colspan="4" class="px-3 py-2 text-right">Нийт:</td>
               <td class="px-3 py-2 text-right">${totalSalary.toLocaleString()}₮</td>
             </tr>
           </tfoot>
@@ -2052,7 +2177,40 @@ function renderTodayWorkersSelect() {
       </div>
     `;
     
+    reportDetails.innerHTML = reportHTML;
+    
+    // Store current report data for Excel export
+    currentReportData = filtered;
+    
     document.getElementById('workerReportResult').classList.remove('hidden');
+  }
+  
+  // Excel-д татах функц
+  function exportToExcel() {
+    if (currentReportData.length === 0) {
+      alert('Татайлангийн өгөгдөл байхгүй байна');
+      return;
+    }
+    
+    // Өгөгдлийг бэлтгэх
+    const data = currentReportData.map(item => ({
+      'Огноо': item.date,
+      'Ажилтан': item.name,
+      'Албан тушаал': item.position,
+      'Тайлбар': item.desc || '',
+      'Утас': item.phone || '',
+      'Данс': item.bank || '',
+      'Цалин': item.salary
+    }));
+    
+    // Excel workbook үүсгэх
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Цалингийн тайлан');
+    
+    // Файл хадгалах
+    const fileName = `цалингийн_тайлан_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   }
   
   // Save Workers
