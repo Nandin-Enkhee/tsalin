@@ -1070,7 +1070,7 @@
       });
       
       if (selectedWorkers.length === 0) {
-        alert(`${i}-р ээлжид ажилчин сонгоогүй байна`);
+        alert(`${i}-р ээлжинд ажилчин сонгоогүй байна`);
         return;
       }
       
@@ -1113,7 +1113,7 @@
     salaryContainer.classList.toggle('hidden', this.value !== 'Тогооч');
   });
 
-  // Login функц
+  // Login функц - ШИНЭЧЛЭГДСЭН
   function login() {
     const pw = document.getElementById('passwordInput').value;
     if (pw === '1515') {
@@ -1151,22 +1151,36 @@
     });
   }
 
-  // Засах хэсгийн ажилтан сонгох dropdown-г бөглөх
+  // Засах хэсгийн ажилтан сонгох dropdown-г бөглөх - ШИНЭЧЛЭГДСЭН
   function populateEditWorkerSelect() {
     const select = document.getElementById('editWorkerSelect');
+    if (!select) {
+      console.error('editWorkerSelect элемент олдсонгүй!');
+      return;
+    }
+    
     select.innerHTML = '<option value="">Ажилтан сонгох</option>';
+    
+    if (workers.length === 0) {
+      console.log('Ажилчид хоосон байна');
+      return;
+    }
+    
+    console.log('Ажилчид олдлоо:', workers.length, 'ш');
     
     const sortedWorkers = sortWorkers([...workers]);
     
-    sortedWorkers.forEach((worker, index) => {
+    sortedWorkers.forEach((worker) => {
       const option = document.createElement('option');
       option.value = worker.name;
       option.textContent = `${worker.name} (${worker.position})`;
       select.appendChild(option);
     });
+    
+    console.log('Ажилчдын dropdown бөглөгдлөө');
   }
 
-  // Сонгогдсон ажилтны мэдээллийг формруу ачаалах
+  // Сонгогдсон ажилтны мэдээллийг формруу ачаалах - ШИНЭЧЛЭГДСЭН
   function loadWorkerData() {
     const select = document.getElementById('editWorkerSelect');
     const selectedName = select.value;
@@ -1175,23 +1189,20 @@
       document.getElementById('editWorkerForm').classList.add('hidden');
       return;
     }
-  
-    const workerIndex = workers.findIndex(w => w.name === selectedName);
-    if (workerIndex === -1) {
+
+    const worker = workers.find(w => w.name === selectedName);
+    if (!worker) {
       alert('Сонгосон ажилтан олдсонгүй');
       document.getElementById('editWorkerForm').classList.add('hidden');
       return;
     }
-  
-    currentEditingWorkerIndex = workerIndex;
-    const worker = workers[workerIndex];
-  
+
     document.getElementById('editWorkerName').value = worker.name || '';
     document.getElementById('editWorkerPosition').value = worker.position || '';
     document.getElementById('editWorkerDesc').value = worker.desc || '';
     document.getElementById('editWorkerPhone').value = worker.phone || '';
     document.getElementById('editWorkerBank').value = worker.bank || '';
-  
+
     const salaryContainer = document.getElementById('editSalaryFieldContainer');
     if (worker.position === 'Тогооч') {
       salaryContainer.classList.remove('hidden');
@@ -1199,7 +1210,7 @@
     } else {
       salaryContainer.classList.add('hidden');
     }
-  
+
     document.getElementById('editWorkerForm').classList.remove('hidden');
   }
   
@@ -1286,7 +1297,7 @@
     document.getElementById('todayWorkersCount').textContent = todayCount;
   }
 
-  // Show Section
+  // Show Section - ШИНЭЧЛЭГДСЭН
   function showSection(id) {
     document.querySelectorAll('.app-section').forEach(s => s.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
@@ -1324,6 +1335,8 @@
       // Reset form
       document.getElementById('editWorkerSelect').value = '';
       document.getElementById('editWorkerForm').classList.add('hidden');
+      // Ажилчдын жагсаалтыг бөглөх - ШИНЭЧЛЭГДСЭН
+      populateEditWorkerSelect();
     }
     if (id === 'debtSection') {
       populateDebtWorkerSelect();
@@ -1534,7 +1547,7 @@
       if (worker.position === 'Тогооч') {
         salary = worker.salary || 100000;
       } else if (worker.position === 'Үйлчлэгч') {
-        salary = 100000;
+        salary = 80000;
       } else if (worker.position === 'Бой') {
         // Check if shift configuration is available
         if (shiftConfig.length > 0) {
@@ -1946,7 +1959,7 @@
     });
   }
 
-  // Add new worker
+  // Add new worker - ШИНЭЧЛЭГДСЭН
   function addNewWorker() {
     const name = document.getElementById('workerName').value.trim();
     const position = document.getElementById('workerPosition').value;
@@ -1992,7 +2005,7 @@
     renderWorkers();
     updateDashboard();
     populateWorkerDropdowns();
-    populateEditWorkerSelect();
+    populateEditWorkerSelect(); // ЭНЭ МӨРИЙГ НЭМНЭ
     populateDebtWorkerSelect();
     showSection('workersSection');
   }
@@ -2025,11 +2038,11 @@
     });
   }
 
-  // Remove worker
+  // Remove worker - ШИНЭЧЛЭГДСЭН
   function removeWorker(arg) {
     const idx = typeof arg === 'number' ? arg : workers.findIndex(w => w.name === arg);
     if (idx === -1) return alert('Ажилтан олдсонгүй');
-  
+
     if (confirm(`"${workers[idx].name}" ажилтанг устгахдаа итгэлтэй байна уу?`)) {
       workers.splice(idx, 1);
       saveWorkers();
@@ -2037,7 +2050,7 @@
       renderWorkers();
       updateDashboard();
       populateWorkerDropdowns();
-      populateEditWorkerSelect();
+      populateEditWorkerSelect(); // ЭНЭ МӨРИЙГ НЭМНЭ
       populateDebtWorkerSelect();
       alert('Ажилтан амжилттай устгагдлаа');
     }
@@ -2255,7 +2268,8 @@
         }
         byWorker[item.name].total += item.salary;
         byWorker[item.name].records.push(item);
-      });
+      });  // зөв хаалт
+      
       
       // Sort workers by position and name
       const sortedWorkers = Object.keys(byWorker).sort((a, b) => {
