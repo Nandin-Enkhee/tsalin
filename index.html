@@ -321,6 +321,86 @@
               </label>
             </div>
             
+            <!-- Шинэ: Хэсэгчилсэн ажлын тооцоо -->
+            <div class="shift-container">
+              <button class="shift-header w-full text-left" onclick="toggleShiftsConfig()">
+                <i class="fas fa-users-slash mr-2"></i>Ээлжээр ажилласан ажилчдын тохируулга
+              </button>
+              <div id="shiftInputsWrapper" class="hidden">
+                <div class="mb-4">
+                  <label>
+                    <span class="block mb-1 font-medium">Ээлжийн тоо:</span>
+                    <select id="shiftCount" class="input-field" onchange="renderShiftInputs()">
+                      <option value="1">1 ээлж</option>
+                      <option value="2">2 ээлж</option>
+                      <option value="3">3 ээлж</option>
+                      <option value="4">4 ээлж</option>
+                    </select>
+                  </label>
+                </div>
+                
+                <div id="shiftInputs">
+                  <!-- Shift inputs will be rendered here -->
+                </div>
+                
+                <button onclick="calculateShiftSalaries()" class="btn-clean w-full">
+                  <i class="fas fa-calculator mr-2"></i>Тооцоолох
+                </button>
+                <div id="shiftResult" class="shift-result hidden">
+                  <div class="font-bold">Тооцоолсон цалин:</div>
+                  <div id="shiftCalculation"></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Шинэ: Тусгай төлбөрүүд -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="bonus-card">
+                <h3 class="font-semibold mb-3 flex items-center">
+                  <i class="fas fa-gift mr-2 text-green-600"></i>Нэмэлт төлбөр
+                </h3>
+                <div class="space-y-2">
+                  <select id="bonusWorkerSelect" class="input-field">
+                    <option value="">Ажилтан сонгох</option>
+                  </select>
+                  <input id="bonusAmount" type="number" min="0" class="input-field" placeholder="Дүн" />
+                  <button onclick="addBonus()" class="btn-clean w-full">
+                    <i class="fas fa-plus mr-2"></i>Нэмэх
+                  </button>
+                </div>
+              </div>
+              
+              <div class="advance-card">
+                <h3 class="font-semibold mb-3 flex items-center">
+                  <i class="fas fa-hand-holding-usd mr-2 text-blue-600"></i>Урьдчилгаа
+                </h3>
+                <div class="space-y-2">
+                  <select id="advanceWorkerSelect" class="input-field">
+                    <option value="">Ажилтан сонгох</option>
+                  </select>
+                  <input id="advanceAmount" type="number" min="0" class="input-field" placeholder="Дүн" />
+                  <button onclick="addAdvance()" class="btn-clean w-full">
+                    <i class="fas fa-plus mr-2"></i>Нэмэх
+                  </button>
+                </div>
+              </div>
+              
+              <div class="loan-card">
+                <h3 class="font-semibold mb-3 flex items-center">
+                  <i class="fas fa-file-invoice-dollar mr-2 text-purple-600"></i>Зээл
+                </h3>
+                <div class="space-y-2">
+                  <select id="loanWorkerSelect" class="input-field">
+                    <option value="">Ажилтан сонгох</option>
+                  </select>
+                  <input id="loanAmount" type="number" min="0" class="input-field" placeholder="Дүн" />
+                  <button onclick="addLoan()" class="btn-clean w-full">
+                    <i class="fas fa-plus mr-2"></i>Нэмэх
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
               <button onclick="calculateSalary()" class="btn-clean flex items-center justify-center">
                 <i class="fas fa-calculator mr-2 text-lg"></i>Цалин бодох
@@ -789,6 +869,7 @@
   let manualWorkers = [];
   let latestSalaryCalc = [];
   let salaryChanges = {};
+  let shiftConfig = [];
   let currentTotalAduu = 0;
   let currentEditingWorkerIndex = -1;
   let currentReportData = [];
@@ -933,6 +1014,304 @@
     }
   }
 
+  // Ээлжээр ажиллах тохиргоо
+  function toggleShiftsConfig() {
+    document.getElementById('shiftInputsWrapper').classList.toggle('hidden');
+  }
+
+  function renderShiftInputs() {
+    const shiftCount = parseInt(document.getElementById('shiftCount').value);
+    const shiftInputs = document.getElementById('shiftInputs');
+    shiftInputs.innerHTML = '';
+    
+    const boyWorkers = sortWorkers(workers.filter(w => w.position === 'Бой'));
+    
+    for (let i = 1; i <= shiftCount; i++) {
+      const shiftDiv = document.createElement('div');
+      shiftDiv.className = 'shift-inputs mb-4 p-3 bg-indigo-100 dark:bg-indigo-900/10 rounded-lg';
+      shiftDiv.innerHTML = `
+        <h4 class="font-bold mb-2 text-indigo-700 dark:text-indigo-300">${i}-р шифт</h4>
+        <div>
+          <label>
+            <span class="block mb-1 font-medium">Адууны тоо:</span>
+            <input id="shiftHorses${i}" type="number" min="0" class="input-field" placeholder="Адууны тоо" />
+          </label>
+        </div>
+        <div>
+          <label>
+            <span class="block mb-1 font-medium">Ажилчдын тоо:</span>
+            <input id="shiftWorkers${i}" type="number" min="1" class="input-field" placeholder="Ажилчдын тоо" />
+          </label>
+        </div>
+        <div>
+          <label>
+            <span class="block mb-1 font-medium">Ажилчид (зөвхөн Бой):</span>
+            <div id="shiftWorkerCheckboxes${i}" class="shift-worker-grid"></div>
+          </label>
+        </div>
+      `;
+      shiftInputs.appendChild(shiftDiv);
+      
+      const workerCheckboxes = document.getElementById(`shiftWorkerCheckboxes${i}`);
+      boyWorkers.forEach(worker => {
+        const div = document.createElement('div');
+        div.className = 'shift-worker-item';
+        div.innerHTML = `
+          <input type="checkbox" id="shift${i}_${worker.name}" class="mr-2">
+          <label for="shift${i}_${worker.name}">${worker.name}</label>
+        `;
+        workerCheckboxes.appendChild(div);
+      });
+    }
+  }
+
+  function calculateShiftSalaries() {
+    const shiftCount = parseInt(document.getElementById('shiftCount').value);
+    shiftConfig = [];
+    
+    for (let i = 1; i <= shiftCount; i++) {
+      const horses = parseInt(document.getElementById(`shiftHorses${i}`).value) || 0;
+      const workerCount = parseInt(document.getElementById(`shiftWorkers${i}`).value) || 0;
+      
+      if (horses <= 0 || workerCount <= 0) {
+        alert(`${i}-р ээлж адуу болон ажилчдын тоог зөв оруулна уу`);
+        return;
+      }
+      
+      const selectedWorkers = [];
+      workers.forEach(worker => {
+        if (worker.position !== 'Бой') return;
+        const checkbox = document.getElementById(`shift${i}_${worker.name}`);
+        if (checkbox && checkbox.checked) {
+          selectedWorkers.push(worker.name);
+        }
+      });
+      
+      if (selectedWorkers.length === 0) {
+        alert(`${i}-р ээлжинд ажилчин сонгоогүй байна`);
+        return;
+      }
+      
+      let calculatedSalary = Math.floor((horses * 18000) / workerCount);
+      let roundedSalary = Math.floor(calculatedSalary / 1000) * 1000;
+      
+      shiftConfig.push({
+        shift: i,
+        horses: horses,
+        workerCount: workerCount,
+        workers: selectedWorkers,
+        salaryPerWorker: roundedSalary
+      });
+    }
+    
+    const resultDiv = document.getElementById('shiftResult');
+    const calcDiv = document.getElementById('shiftCalculation');
+    
+    let resultHTML = '';
+    shiftConfig.forEach(config => {
+      resultHTML += `
+        <div class="mb-3 p-2 bg-white dark:bg-gray-800 rounded border">
+          <div class="font-bold">${config.shift}-р ээлж:</div>
+          <div>Адуу: ${config.horses}, Ажилчид: ${config.workerCount}</div>
+          <div>Ажилчдын нэрс: ${config.workers.join(', ')}</div>
+          <div class="font-semibold mt-1">Цалин: ${config.salaryPerWorker.toLocaleString()}₮ / ажилчин</div>
+        </div>
+      `;
+    });
+    
+    calcDiv.innerHTML = resultHTML;
+    resultDiv.classList.remove('hidden');
+  }
+
+  // Тусгай төлбөрүүд
+  function populateWorkerDropdowns() {
+    const bonusSelect = document.getElementById('bonusWorkerSelect');
+    const advanceSelect = document.getElementById('advanceWorkerSelect');
+    const loanSelect = document.getElementById('loanWorkerSelect');
+    
+    bonusSelect.innerHTML = '<option value="">Ажилтан сонгох</option>';
+    advanceSelect.innerHTML = '<option value="">Ажилтан сонгох</option>';
+    loanSelect.innerHTML = '<option value="">Ажилтан сонгох</option>';
+    
+    const sortedWorkers = sortWorkers([...workers]);
+    
+    sortedWorkers.forEach(worker => {
+      const option = document.createElement('option');
+      option.value = worker.name;
+      option.textContent = worker.name;
+      
+      bonusSelect.appendChild(option.cloneNode(true));
+      advanceSelect.appendChild(option.cloneNode(true));
+      loanSelect.appendChild(option);
+    });
+  }
+
+  function addBonus() {
+    const workerName = document.getElementById('bonusWorkerSelect').value;
+    const amount = document.getElementById('bonusAmount').value;
+    
+    if (!workerName || !amount) {
+      alert('Ажилтан болон дүнг сонгоно уу');
+      return;
+    }
+    
+    manualWorkers.push({
+      name: workerName,
+      position: 'Хувцас',
+      desc: 'Нэмэлт төлбөр',
+      salary: Number(amount),
+      manual: true
+    });
+    
+    document.getElementById('bonusWorkerSelect').value = '';
+    document.getElementById('bonusAmount').value = '';
+    
+    renderSalaryTable();
+  }
+
+  function addAdvance() {
+    const workerName = document.getElementById('advanceWorkerSelect').value;
+    const amount = document.getElementById('advanceAmount').value;
+    
+    if (!workerName || !amount) {
+      alert('Ажилтан болон дүнг сонгоно уу');
+      return;
+    }
+    
+    manualWorkers.push({
+      name: workerName,
+      position: 'Урьдчилгаа',
+      desc: 'Урьдчилгаа төлбөр',
+      salary: Number(amount),
+      manual: true
+    });
+    
+    document.getElementById('advanceWorkerSelect').value = '';
+    document.getElementById('advanceAmount').value = '';
+    
+    renderSalaryTable();
+  }
+
+  function addLoan() {
+    const workerName = document.getElementById('loanWorkerSelect').value;
+    const amount = document.getElementById('loanAmount').value;
+    
+    if (!workerName || !amount) {
+      alert('Ажилтан болон дүнг сонгоно уу');
+      return;
+    }
+    
+    manualWorkers.push({
+      name: workerName,
+      position: 'Зээл',
+      desc: 'Зээлийн суутгал',
+      salary: -Number(amount),
+      manual: true
+    });
+    
+    document.getElementById('loanWorkerSelect').value = '';
+    document.getElementById('loanAmount').value = '';
+    
+    renderSalaryTable();
+  }
+
+  // Excel экспорт
+  function exportToExcel() {
+    if (!currentReportData || currentReportData.data.length === 0) {
+      alert('Тайлангийн өгөгдөл байхгүй байна');
+      return;
+    }
+    
+    const { workerName, startDate, endDate, data } = currentReportData;
+    
+    const workersData = {};
+    data.forEach(item => {
+      if (!workersData[item.name]) {
+        workersData[item.name] = {
+          total: 0,
+          workDays: new Set()
+        };
+      }
+      workersData[item.name].total += item.salary;
+      workersData[item.name].workDays.add(item.date);
+    });
+    
+    const sortedWorkers = Object.keys(workersData)
+      .map(name => {
+        const worker = workers.find(w => w.name === name) || {};
+        return {
+          name,
+          position: worker.position || 'Бусад',
+          ...workersData[name]
+        };
+      })
+      .sort((a, b) => {
+        const positionCompare = (a.position || '').localeCompare(b.position || '');
+        if (positionCompare !== 0) return positionCompare;
+        return a.name.localeCompare(b.name);
+      });
+    
+    const excelData = [];
+    
+    excelData.push([
+      '№', 'Албан тушаал', 'Нэр', 'Хэдэн өдөр ажилласан', 'Нийт цалин', 
+      'Хувцас хасах', 'Урьдчилгаа хасах', 'Зээл хасах', 'Олгох цалин', 'Утас', 'Данс'
+    ]);
+    
+    let rowNumber = 1;
+    
+    sortedWorkers.forEach(workerInfo => {
+      const worker = workers.find(w => w.name === workerInfo.name) || {};
+      const workDays = workerInfo.workDays.size;
+      const totalSalary = workerInfo.total;
+      
+      const clothesDebt = calculateDebtForWorkerByType(workerInfo.name, startDate, endDate, 'Хувцас');
+      const advanceDebt = calculateDebtForWorkerByType(workerInfo.name, startDate, endDate, 'Урьдчилгаа');
+      const loanDebt = calculateDebtForWorkerByType(workerInfo.name, startDate, endDate, 'Зээл');
+      
+      const finalSalary = totalSalary - clothesDebt - advanceDebt - loanDebt;
+      
+      excelData.push([
+        rowNumber++,
+        workerInfo.position || '-',
+        workerInfo.name,
+        workDays,
+        totalSalary,
+        clothesDebt,
+        advanceDebt,
+        loanDebt,
+        finalSalary,
+        worker.phone || '',
+        worker.bank || ''
+      ]);
+    });
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Цалингийн тайлан');
+    
+    const colWidths = [
+      { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 8 }, { wch: 12 },
+      { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 20 }
+    ];
+    worksheet['!cols'] = colWidths;
+    
+    const fileName = `цалингийн_тайлан_${startDate}_${endDate}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  }
+  
+  function calculateDebtForWorkerByType(workerName, startDate, endDate, debtType) {
+    const debts = workerDebts.filter(d => 
+      d.workerName === workerName && 
+      !d.paid &&
+      d.type === debtType &&
+      d.date >= startDate && 
+      d.date <= endDate
+    );
+    
+    return debts.reduce((sum, debt) => sum + debt.amount, 0);
+  }
+
   // Login функц
   function login() {
     const pw = document.getElementById('passwordInput').value;
@@ -941,6 +1320,8 @@
       document.getElementById('appSection').classList.remove('hidden');
       showSection('salarySection');
       refreshAll();
+      populateWorkerDropdowns();
+      renderShiftInputs();
     } else {
       alert('Нууц үг буруу байна');
     }
@@ -1235,8 +1616,17 @@
       } else if (worker.position === 'Үйлчлэгч') {
         salary = 80000;
       } else if (worker.position === 'Бой') {
-        const cnt = countByPosition['Бой'] || 1;
-        salary = Math.floor((totalAduu * 18000) / cnt);
+        // Шинэ: Шифтийн тохиргоог ашиглах
+        if (shiftConfig.length > 0) {
+          shiftConfig.forEach(config => {
+            if (config.workers.includes(worker.name)) {
+              salary += config.salaryPerWorker;
+            }
+          });
+        } else {
+          const cnt = countByPosition['Бой'] || 1;
+          salary = Math.floor((totalAduu * 18000) / cnt);
+        }
       } else if (worker.position === 'Гэдэс') {
         const cnt = countByPosition['Гэдэс'] || 1;
         salary = Math.floor((totalAduu * 4000) / cnt);
@@ -1648,6 +2038,7 @@
     updateDashboard();
     populateEditWorkerSelect();
     populateDebtWorkerSelect();
+    populateWorkerDropdowns();
     showSection('workersSection');
   }
 
@@ -1691,6 +2082,7 @@
       updateDashboard();
       populateEditWorkerSelect();
       populateDebtWorkerSelect();
+      populateWorkerDropdowns();
       alert('Ажилтан амжилттай устгагдлаа');
     }
   }
@@ -2040,6 +2432,8 @@
     populateEditWorkerSelect();
     populateDebtWorkerSelect();
     renderDebtList();
+    populateWorkerDropdowns();
+    renderShiftInputs();
   }
 
 </script>
