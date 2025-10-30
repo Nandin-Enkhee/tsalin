@@ -1631,6 +1631,12 @@
         const cnt = countByPosition['Гэдэс'] || 1;
         let calculatedSalary = Math.floor((totalAduu * 4000) / cnt);
         salary = Math.floor(calculatedSalary / 1000) * 1000; // 1000-аар бүлэглэх
+      } else if (worker.position === 'Хөргүүр' || worker.position === 'Мах') {
+        if (totalAduu < 70) {
+          salary = 100000;
+        } else {
+          salary = 150000;
+        }
       } else {
         if (totalAduu < 70) {
           salary = 80000;
@@ -1638,7 +1644,6 @@
           salary = 100000;
         }
       }
-
       latestSalaryCalc.push({
         name: worker.name,
         position: worker.position,
@@ -2441,3 +2446,4 @@
 
 </body>
 </html>
+
