@@ -201,6 +201,35 @@
     .number-badge {
       @apply inline-flex items-center justify-center w-6 h-6 bg-indigo-500 text-white rounded-full text-xs font-bold mr-2;
     }
+    
+    /* Шинэ стилүүд */
+    .position-group {
+      @apply mb-4 p-3 rounded-lg;
+    }
+    .position-title {
+      @apply font-bold text-lg mb-2 flex items-center;
+    }
+    .position-count {
+      @apply ml-2 bg-indigo-600 text-white rounded-full px-3 py-1 text-sm;
+    }
+    .selected-workers-list {
+      @apply mt-4 bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm;
+    }
+    .selected-worker-item {
+      @apply flex items-center justify-between py-2 px-3 mb-2 rounded bg-gray-100 dark:bg-gray-600;
+    }
+    .selected-worker-name {
+      @apply font-medium;
+    }
+    .selected-worker-position {
+      @apply text-sm text-gray-600 dark:text-gray-400;
+    }
+    .shormos-badge {
+      @apply bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200;
+    }
+    .tolgoi-badge {
+      @apply bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200;
+    }
   </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200 min-h-screen flex flex-col">
@@ -300,7 +329,7 @@
                   <br>- 69 адуу хүртэл: 80,000₮
                   <br>- 70+ адуу: 100,000₮
                 </li>
-                <li>Тогооч: тогтмол 100,000₮ (тохируулж болно)</li>
+                <li>Тогооч, Шөрмөс, Толгой: тогтмол 100,000₮ (тохируулж болно)</li>
                 <li>Үйлчлэгч: тогтмол 80,000₮</li>
               </ul>
             </div>
@@ -429,6 +458,7 @@
                 <option>Бүртгэл</option>
                 <option>Нэмэлт</option>
                 <option>Толгой</option>
+                <option>Шөрмөс</option>
               </select>
               <input id="manualDesc" type="text" class="input-field" placeholder="Тайлбар" />
               <input id="manualSalary" type="number" min="0" class="input-field" placeholder="Цалин" />
@@ -536,6 +566,8 @@
                   <option>Яс</option>
                   <option>Мах</option>
                   <option>Бүртгэл</option>
+                  <option>Толгой</option>
+                  <option>Шөрмөс</option>
                 </select>
               </label>
             </div>
@@ -575,7 +607,7 @@
         </div>
       </section>
 
-      <!-- Today Workers Section -->
+      <!-- Өнөөдөр ажилласан ажилчид хэсэг - САЙЖРУУЛСАН -->
       <section id="todayWorkersSection" class="app-section hidden">
         <h2 class="text-2xl font-bold mb-4 border-b border-gray-300 dark:border-gray-700 pb-2 flex items-center">
           <i class="fas fa-calendar-day mr-2 text-indigo-600"></i>Өнөөдөр ажилласан ажилчид
@@ -588,11 +620,19 @@
           </label>
         </div>
         
+        <!-- Сонгогдсон ажилчдын тоо мэргэжилээр -->
+        <div id="selectedCounts" class="mb-4 hidden">
+          <h3 class="font-bold mb-2 flex items-center">
+            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Сонгогдсон ажилчдын тоо
+          </h3>
+          <div id="positionCounts" class="flex flex-wrap gap-2"></div>
+        </div>
+        
         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
           <h3 class="font-bold mb-3 flex items-center">
             <i class="fas fa-user-check mr-2 text-indigo-600"></i>Ажилчдыг сонгох
           </h3>
-          <div id="todayWorkersCheckboxes" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
+          <div id="todayWorkersCheckboxes" class="space-y-4"></div>
         </div>
         
         <button onclick="saveTodayWorkers()" class="btn-clean w-full py-3">
@@ -635,6 +675,8 @@
                 <option>Яс</option>
                 <option>Мах</option>
                 <option>Бүртгэл</option>
+                <option>Толгой</option>
+                <option>Шөрмөс</option>
               </select>
             </label>
           </div>
@@ -887,7 +929,8 @@
       'Бүртгэл': 8,
       'Тогооч': 9,
       'Үйлчлэгч': 10,
-      'Нэмэлт': 11
+      'Нэмэлт': 11,
+      'Шөрмөс': 12
     };
 
     return workersList.sort((a, b) => {
@@ -1386,7 +1429,7 @@
     document.getElementById('editWorkerBank').value = worker.bank || '';
 
     const salaryContainer = document.getElementById('editSalaryFieldContainer');
-    if (worker.position === 'Тогооч') {
+    if (worker.position === 'Тогооч' || worker.position === 'Шөрмөс' || worker.position === 'Толгой') {
       salaryContainer.classList.remove('hidden');
       document.getElementById('editWorkerSalary').value = worker.salary || 100000;
     } else {
@@ -1412,9 +1455,9 @@
       return;
     }
     
-    if (position === 'Тогооч') {
+    if (position === 'Тогооч' || position === 'Шөрмөс' || position === 'Толгой') {
       if (!salary || isNaN(salary)) {
-        alert('Тогочийн цалингийн мэдээллийг оруулна уу');
+        alert('Цалингийн мэдээллийг оруулна уу');
         return;
       }
       salary = Number(salary);
@@ -1427,7 +1470,7 @@
       desc,
       phone,
       bank,
-      salary: position === 'Тогооч' ? salary : undefined
+      salary: (position === 'Тогооч' || position === 'Шөрмөс' || position === 'Толгой') ? salary : undefined
     };
     
     saveWorkers();
@@ -1520,7 +1563,9 @@
                 worker.position === 'Гэдэс' ? 'guts-badge' : 
                 worker.position === 'Хөргүүр' ? 'cooler-badge' : 
                 worker.position === 'Тогооч' ? 'cook-badge' : 
-                worker.position === 'Үйлчлэгч' ? 'server-badge' : ''
+                worker.position === 'Үйлчлэгч' ? 'server-badge' :
+                worker.position === 'Шөрмөс' ? 'shormos-badge' :
+                worker.position === 'Толгой' ? 'tolgoi-badge' : ''
               }">
                 ${worker.position}
               </span>
@@ -1539,7 +1584,7 @@
             <span class="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 px-2 py-1 rounded text-xs">
               <i class="fas fa-wallet mr-1"></i>${worker.bank || '-'}
             </span>
-            ${worker.position === 'Тогооч' ? `
+            ${(worker.position === 'Тогооч' || worker.position === 'Шөрмөс' || worker.position === 'Толгой') ? `
             <span class="bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 px-2 py-1 rounded text-xs">
               <i class="fas fa-money-bill-wave mr-1"></i>${(worker.salary || 100000).toLocaleString()}₮
             </span>
@@ -1611,7 +1656,7 @@
       if (!worker) return;
 
       let salary = 0;
-      if (worker.position === 'Тогооч') {
+      if (worker.position === 'Тогооч' || worker.position === 'Шөрмөс' || worker.position === 'Толгой') {
         salary = worker.salary || 100000;
       } else if (worker.position === 'Үйлчлэгч') {
         salary = 100000;
@@ -1644,6 +1689,7 @@
           salary = 100000;
         }
       }
+
       latestSalaryCalc.push({
         name: worker.name,
         position: worker.position,
@@ -1802,24 +1848,41 @@
   }
 
   // Цалинг хадгалах
-  function saveSalary() {
-    const date = document.getElementById('salaryDateInput').value;
-    if (!date) { alert('Огноог сонгоно уу'); return; }
-    if (latestSalaryCalc.length === 0) { alert('Цалин бодсон байх ёстой'); return; }
+ // saveSalary функцийг дараах байдлаар өөрчлөх
+function saveSalary() {
+  const date = document.getElementById('salaryDateInput').value;
+  if (!date) { alert('Огноог сонгоно уу'); return; }
+  if (latestSalaryCalc.length === 0) { alert('Цалин бодсон байх ёстой'); return; }
 
-    saveAllSalaryChanges();
-    
-    latestSalaryCalc.forEach(item => {
-      salaryHistory.push({
-        date: date,
-        ...item
-      });
-    });
-    saveSalaryHistory();
-    alert('Цалин амжилттай хадгалагдлаа');
-    renderSalaryHistory();
-    updateDashboard();
+  saveAllSalaryChanges();
+  
+  // Шинэ: Тухайн өдрийн цалин байгаа эсэхийг шалгах
+  const existingRecords = salaryHistory.filter(item => item.date === date);
+  if (existingRecords.length > 0) {
+      const password = prompt("Энэ өдрийн цалин өмнө нь бүртгэгдсэн байна. Устгах уу? Устгах нууц үгээ оруулна уу:");
+      if (password === '8008') {
+          // Нууц үг зөв бол устгах
+          salaryHistory = salaryHistory.filter(item => item.date !== date);
+      } else if (password !== null) {
+          // Нууц үг буруу бол цуцлах
+          alert('Нууц үг буруу байна. Цалин хадгалагдаагүй.');
+          return;
+      }
+      // Нууц үг оруулаагүй (cancel дарсан) бол хадгалах ажиллагаа үргэлжилнэ
   }
+  
+  latestSalaryCalc.forEach(item => {
+      salaryHistory.push({
+          date: date,
+          ...item
+      });
+  });
+  
+  saveSalaryHistory();
+  alert('Цалин амжилттай хадгалагдлаа');
+  renderSalaryHistory();
+  updateDashboard();
+}
 
   // Save salary history
   function saveSalaryHistory() {
@@ -1903,13 +1966,15 @@
     printArea.style.display = 'none';
   }
 
-  // Render today workers selection with numbering
+  // САЙЖРУУЛСАН: Өнөөдөр ажиллах ажилчдыг сонгох хэсгийг боловсруулах
   function renderTodayWorkersSelect() {
     const container = document.getElementById('todayWorkersCheckboxes');
     container.innerHTML = '';
     
     if (workers.length === 0) {
       container.innerHTML = '<div class="text-center py-4 text-gray-500">Ажилтан бүртгэгдээгүй байна</div>';
+      document.getElementById('selectedCounts').classList.add('hidden');
+      document.getElementById('selectedWorkersList').classList.add('hidden');
       return;
     }
 
@@ -1930,22 +1995,156 @@
       }
     }
 
+    // Ажилчдыг мэргэжилээр нь бүлэглэх
+    const groupedByPosition = {};
     const sortedWorkers = sortWorkers([...workers]);
     
-    sortedWorkers.forEach((worker, index) => {
-      const div = document.createElement('div');
-      div.className = 'checkbox-container';
-      div.innerHTML = `
-        <input 
-          type="checkbox" 
-          id="worker_${worker.name}" 
-          ${workedToday.includes(worker.name) ? 'checked' : ''}
-        >
-        <span class="number-badge">${index + 1}</span>
-        <label for="worker_${worker.name}">${worker.name} (${worker.position})</label>
-      `;
-      container.appendChild(div);
+    sortedWorkers.forEach(worker => {
+      if (!groupedByPosition[worker.position]) {
+        groupedByPosition[worker.position] = [];
+      }
+      groupedByPosition[worker.position].push(worker);
     });
+
+    // Мэргэжил тус бүрийн өнгө
+    const positionColors = {
+      'Толгой': 'bg-rose-100 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700',
+      'Бой': 'bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700',
+      'Гэдэс': 'bg-green-100 dark:bg-green-900/20 border-green-300 dark:border-green-700',
+      'Хөргүүр': 'bg-purple-100 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700',
+      'Умс': 'bg-indigo-100 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700',
+      'Яс': 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700',
+      'Мах': 'bg-red-100 dark:bg-red-900/20 border-red-300 dark:border-red-700',
+      'Бүртгэл': 'bg-gray-100 dark:bg-gray-900/20 border-gray-300 dark:border-gray-700',
+      'Тогооч': 'bg-amber-100 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700',
+      'Үйлчлэгч': 'bg-pink-100 dark:bg-pink-900/20 border-pink-300 dark:border-pink-700',
+      'Шөрмөс': 'bg-cyan-100 dark:bg-cyan-900/20 border-cyan-300 dark:border-cyan-700'
+    };
+
+    // Мэргэжил тус бүрээр бүлэг үүсгэх
+    Object.keys(groupedByPosition).forEach(position => {
+      const positionGroup = document.createElement('div');
+      positionGroup.className = `position-group ${positionColors[position] || 'bg-gray-100 dark:bg-gray-800'}`;
+      
+      const positionTitle = document.createElement('div');
+      positionTitle.className = 'position-title';
+      positionTitle.innerHTML = `
+        ${position}
+        <span class="position-count">${groupedByPosition[position].length}</span>
+      `;
+      
+      positionGroup.appendChild(positionTitle);
+      
+      const workersContainer = document.createElement('div');
+      workersContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-2';
+      
+      groupedByPosition[position].forEach((worker, index) => {
+        const div = document.createElement('div');
+        div.className = 'checkbox-container';
+        div.innerHTML = `
+          <input 
+            type="checkbox" 
+            id="worker_${worker.name}" 
+            ${workedToday.includes(worker.name) ? 'checked' : ''}
+            onchange="updateSelectedWorkers()"
+          >
+          <span class="number-badge">${index + 1}</span>
+          <label for="worker_${worker.name}">${worker.name}</label>
+        `;
+        workersContainer.appendChild(div);
+      });
+      
+      positionGroup.appendChild(workersContainer);
+      container.appendChild(positionGroup);
+    });
+
+    // Сонгогдсон ажилчдыг шинэчлэх
+    updateSelectedWorkers();
+  }
+
+  // Сонгогдсон ажилчдын мэдээллийг шинэчлэх
+  function updateSelectedWorkers() {
+    const selectedWorkers = [];
+    workers.forEach(worker => {
+      const checkbox = document.getElementById(`worker_${worker.name}`);
+      if (checkbox && checkbox.checked) {
+        selectedWorkers.push(worker);
+      }
+    });
+
+    // Сонгогдсон ажилчдын тоог мэргэжилээр харуулах
+    const positionCounts = {};
+    selectedWorkers.forEach(worker => {
+      positionCounts[worker.position] = (positionCounts[worker.position] || 0) + 1;
+    });
+
+    const countsContainer = document.getElementById('positionCounts');
+    countsContainer.innerHTML = '';
+
+    if (Object.keys(positionCounts).length > 0) {
+      document.getElementById('selectedCounts').classList.remove('hidden');
+      
+      Object.keys(positionCounts).forEach(position => {
+        const countBadge = document.createElement('div');
+        countBadge.className = 'px-3 py-1 rounded-full font-medium flex items-center';
+        
+        // Мэргэжил тус бүрийн өнгө
+        const positionBadgeClasses = {
+          'Толгой': 'bg-rose-500 text-white',
+          'Бой': 'bg-blue-500 text-white',
+          'Гэдэс': 'bg-green-500 text-white',
+          'Хөргүүр': 'bg-purple-500 text-white',
+          'Умс': 'bg-indigo-500 text-white',
+          'Яс': 'bg-yellow-500 text-white',
+          'Мах': 'bg-red-500 text-white',
+          'Бүртгэл': 'bg-gray-500 text-white',
+          'Тогооч': 'bg-amber-500 text-white',
+          'Үйлчлэгч': 'bg-pink-500 text-white',
+          'Шөрмөс': 'bg-cyan-500 text-white'
+        };
+        
+        countBadge.className += ` ${positionBadgeClasses[position] || 'bg-gray-500 text-white'}`;
+        countBadge.innerHTML = `${position}: ${positionCounts[position]}`;
+        countsContainer.appendChild(countBadge);
+      });
+    } else {
+      document.getElementById('selectedCounts').classList.add('hidden');
+    }
+
+    // Сонгогдсон ажилчдын жагсаалтыг харуулах
+    const selectedContainer = document.getElementById('selectedWorkersContainer');
+    selectedContainer.innerHTML = '';
+
+    if (selectedWorkers.length > 0) {
+      document.getElementById('selectedWorkersList').classList.remove('hidden');
+      
+      selectedWorkers.forEach(worker => {
+        const workerItem = document.createElement('div');
+        workerItem.className = 'selected-worker-item';
+        workerItem.innerHTML = `
+          <div>
+            <div class="selected-worker-name">${worker.name}</div>
+            <div class="selected-worker-position">${worker.position}</div>
+          </div>
+          <div>
+            <span class="position-badge ${
+              worker.position === 'Бой' ? 'boy-badge' : 
+              worker.position === 'Гэдэс' ? 'guts-badge' : 
+              worker.position === 'Хөргүүр' ? 'cooler-badge' : 
+              worker.position === 'Тогооч' ? 'cook-badge' : 
+              worker.position === 'Үйлчлэгч' ? 'server-badge' :
+              worker.position === 'Шөрмөс' ? 'shormos-badge' :
+              worker.position === 'Толгой' ? 'tolgoi-badge' : ''
+            }">
+              ${worker.position}
+            </span>
+          </div>
+        `;
+        selectedContainer.appendChild(workerItem);
+      });
+    } else {
+      document.getElementById('selectedWorkersList').classList.add('hidden');
+    }
   }
 
   // Save today workers
@@ -2019,9 +2218,9 @@
       return;
     }
     
-    if (position === 'Тогооч') {
+    if (position === 'Тогооч' || position === 'Шөрмөс' || position === 'Толгой') {
       if (!salary || isNaN(salary)) {
-        alert('Тогочийн цалингийн мэдээллийг оруулна уу');
+        alert('Цалингийн мэдээллийг оруулна уу');
         return;
       }
       salary = Number(salary);
@@ -2033,7 +2232,7 @@
       desc,
       phone,
       bank,
-      salary: position === 'Тогооч' ? salary : undefined
+      salary: (position === 'Тогооч' || position === 'Шөрмөс' || position === 'Толгой') ? salary : undefined
     });
     
     workers = sortWorkers(workers);
@@ -2307,7 +2506,8 @@
           'Бүртгэл': 8,
           'Тогооч': 9,
           'Үйлчлэгч': 10,
-          'Нэмэлт': 11
+          'Нэмэлт': 11,
+          'Шөрмөс': 12
         };
         
         const aPos = positionOrder[workerA.position] || 99;
@@ -2418,12 +2618,12 @@
 
     document.getElementById('workerPosition').addEventListener('change', function() {
       const salaryContainer = document.getElementById('salaryFieldContainer');
-      salaryContainer.classList.toggle('hidden', this.value !== 'Тогооч');
+      salaryContainer.classList.toggle('hidden', !['Тогооч', 'Шөрмөс', 'Толгой'].includes(this.value));
     });
 
     document.getElementById('editWorkerPosition').addEventListener('change', function() {
       const salaryContainer = document.getElementById('editSalaryFieldContainer');
-      salaryContainer.classList.toggle('hidden', this.value !== 'Тогооч');
+      salaryContainer.classList.toggle('hidden', !['Тогооч', 'Шөрмөс', 'Толгой'].includes(this.value));
     });
   });
 
@@ -2446,4 +2646,3 @@
 
 </body>
 </html>
-
