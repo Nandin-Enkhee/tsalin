@@ -1071,7 +1071,14 @@
     const shiftInputs = document.getElementById('shiftInputs');
     shiftInputs.innerHTML = '';
     
-    const boyWorkers = sortWorkers(workers.filter(w => w.position === 'Бой'));
+    // Тухайн өдрийн ажилласан ажилчдыг авах
+    const salaryDate = document.getElementById('salaryDateInput').value;
+    const workedToday = todayWorkers[salaryDate] || [];
+    
+    // Зөвхөн тухайн өдөр ажилласан бой ажилчдыг шүүх
+    const boyWorkers = sortWorkers(workers.filter(w => 
+      w.position === 'Бой' && workedToday.includes(w.name)
+    ));
     
     for (let i = 1; i <= shiftCount; i++) {
       const shiftDiv = document.createElement('div');
@@ -1100,15 +1107,24 @@
       shiftInputs.appendChild(shiftDiv);
       
       const workerCheckboxes = document.getElementById(`shiftWorkerCheckboxes${i}`);
-      boyWorkers.forEach(worker => {
-        const div = document.createElement('div');
-        div.className = 'shift-worker-item';
-        div.innerHTML = `
-          <input type="checkbox" id="shift${i}_${worker.name}" class="mr-2">
-          <label for="shift${i}_${worker.name}">${worker.name}</label>
+      
+      if (boyWorkers.length === 0) {
+        workerCheckboxes.innerHTML = `
+          <div class="text-center py-2 text-gray-500 text-sm">
+            ${salaryDate ? 'Энэ өдөр ажилласан бой ажилчин олдсонгүй' : 'Эхлээд цалингийн огноог сонгоно уу'}
+          </div>
         `;
-        workerCheckboxes.appendChild(div);
-      });
+      } else {
+        boyWorkers.forEach(worker => {
+          const div = document.createElement('div');
+          div.className = 'shift-worker-item';
+          div.innerHTML = `
+            <input type="checkbox" id="shift${i}_${worker.name}" class="mr-2">
+            <label for="shift${i}_${worker.name}">${worker.name}</label>
+          `;
+          workerCheckboxes.appendChild(div);
+        });
+      }
     }
   }
 
@@ -1681,7 +1697,7 @@
         const cnt = countByPosition['Гэдэс'] || 1;
         let calculatedSalary = Math.floor((totalAduu * 4000) / cnt);
         salary = Math.floor(calculatedSalary / 1000) * 1000; // 1000-аар бүлэглэх
-      } else if (worker.position === 'Хөргүүр' || worker.position === 'Мах') {
+      } else if (worker.position === 'Хөргүүр' || worker.position === 'Мах' || worker.position === 'Яс') {
         if (totalAduu < 70) {
           salary = 100000;
         } else {
@@ -1853,41 +1869,40 @@
   }
 
   // Цалинг хадгалах
- // saveSalary функцийг дараах байдлаар өөрчлөх
-function saveSalary() {
-  const date = document.getElementById('salaryDateInput').value;
-  if (!date) { alert('Огноог сонгоно уу'); return; }
-  if (latestSalaryCalc.length === 0) { alert('Цалин бодсон байх ёстой'); return; }
+  function saveSalary() {
+    const date = document.getElementById('salaryDateInput').value;
+    if (!date) { alert('Огноог сонгоно уу'); return; }
+    if (latestSalaryCalc.length === 0) { alert('Цалин бодсон байх ёстой'); return; }
 
-  saveAllSalaryChanges();
-  
-  // Шинэ: Тухайн өдрийн цалин байгаа эсэхийг шалгах
-  const existingRecords = salaryHistory.filter(item => item.date === date);
-  if (existingRecords.length > 0) {
-      const password = prompt("Энэ өдрийн цалин өмнө нь бүртгэгдсэн байна. Устгах уу? Устгах нууц үгээ оруулна уу:");
-      if (password === '8008') {
-          // Нууц үг зөв бол устгах
-          salaryHistory = salaryHistory.filter(item => item.date !== date);
-      } else if (password !== null) {
-          // Нууц үг буруу бол цуцлах
-          alert('Нууц үг буруу байна. Цалин хадгалагдаагүй.');
-          return;
-      }
-      // Нууц үг оруулаагүй (cancel дарсан) бол хадгалах ажиллагаа үргэлжилнэ
+    saveAllSalaryChanges();
+    
+    // Шинэ: Тухайн өдрийн цалин байгаа эсэхийг шалгах
+    const existingRecords = salaryHistory.filter(item => item.date === date);
+    if (existingRecords.length > 0) {
+        const password = prompt("Энэ өдрийн цалин өмнө нь бүртгэгдсэн байна. Устгах уу? Устгах нууц үгээ оруулна уу:");
+        if (password === '8008') {
+            // Нууц үг зөв бол устгах
+            salaryHistory = salaryHistory.filter(item => item.date !== date);
+        } else if (password !== null) {
+            // Нууц үг буруу бол цуцлах
+            alert('Нууц үг буруу байна. Цалин хадгалагдаагүй.');
+            return;
+        }
+        // Нууц үг оруулаагүй (cancel дарсан) бол хадгалах ажиллагаа үргэлжилнэ
+    }
+    
+    latestSalaryCalc.forEach(item => {
+        salaryHistory.push({
+            date: date,
+            ...item
+        });
+    });
+    
+    saveSalaryHistory();
+    alert('Цалин амжилттай хадгалагдлаа');
+    renderSalaryHistory();
+    updateDashboard();
   }
-  
-  latestSalaryCalc.forEach(item => {
-      salaryHistory.push({
-          date: date,
-          ...item
-      });
-  });
-  
-  saveSalaryHistory();
-  alert('Цалин амжилттай хадгалагдлаа');
-  renderSalaryHistory();
-  updateDashboard();
-}
 
   // Save salary history
   function saveSalaryHistory() {
@@ -2633,6 +2648,14 @@ function saveSalary() {
     document.getElementById('editWorkerPosition').addEventListener('change', function() {
       const salaryContainer = document.getElementById('editSalaryFieldContainer');
       salaryContainer.classList.toggle('hidden', !['Тогооч', 'Шөрмөс', 'Толгой', 'Галч'].includes(this.value));
+    });
+
+    // Шинэ: Цалингийн огноо өөрчлөгдөх үед ээлжийн сонголтыг шинэчлэх
+    document.getElementById('salaryDateInput').addEventListener('change', function() {
+      // Ээлжийн тохиргоо байгаа бол шинэчлэх
+      if (!document.getElementById('shiftInputsWrapper').classList.contains('hidden')) {
+        renderShiftInputs();
+      }
     });
   });
 
